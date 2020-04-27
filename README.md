@@ -14,6 +14,7 @@ Description follows.
 The core modules of the eVCU are
 * an Arduino Uno or Mega (smaller models do not provide enough pins),
 * an MCP2515 chip with SPI for CAN-bus communication.
+
 All other devices depend on the vehicle set-up. However, a few things are useful in every electric vehicle:
 * Electric throttle (basically a potentiometer)
 * Power button with LED indicating the motor status
