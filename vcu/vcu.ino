@@ -205,15 +205,15 @@ void updateWarnSignals() {
     powerButton.setMCUready(true);
   }
   // Motor/MCU warnings
-  if (can.readSignal(MCU1, MCU1_ActMotorSpd_LSB, MCU1_ActMotorSpd_LEN, MCU1_ActMotorSpd_CONV_D) == MCU1_ActMotorSpd_INVALID
-      || can.readSignal(MCU1, MCU1_ActMotorTq_LSB, MCU1_ActMotorTq_LEN, MCU1_ActMotorTq_CONV_D) == MCU1_ActMotorTq_INVALID
-      || can.readSignal(MCU1, MCU1_MaxMotorTq_LSB, MCU1_MaxMotorTq_LEN, MCU1_MaxMotorTq_CONV_D) == MCU1_MaxMotorTq_INVALID
-      || can.readSignal(MCU1, MCU1_MaxMotorBrakeTq_LSB, MCU1_MaxMotorBrakeTq_LEN, MCU1_MaxMotorBrakeTq_CONV_D) == MCU1_MaxMotorBrakeTq_INVALID
+  if (can.readSignal(MCU1, MCU1_ActMotorSpd_LSB, MCU1_ActMotorSpd_LEN) == MCU1_ActMotorSpd_INVALID
+      || can.readSignal(MCU1, MCU1_ActMotorTq_LSB, MCU1_ActMotorTq_LEN) == MCU1_ActMotorTq_INVALID
+      || can.readSignal(MCU1, MCU1_MaxMotorTq_LSB, MCU1_MaxMotorTq_LEN) == MCU1_MaxMotorTq_INVALID
+      || can.readSignal(MCU1, MCU1_MaxMotorBrakeTq_LSB, MCU1_MaxMotorBrakeTq_LEN) == MCU1_MaxMotorBrakeTq_INVALID
       || can.readSignal(MCU1, MCU1_MaxMotorTq_LSB, MCU1_MaxMotorTq_LEN) > EEPROM.read(MAX_TORQUE)
       || can.readSignal(MCU1, MCU1_MaxMotorBrakeTq_LSB, MCU1_MaxMotorBrakeTq_LEN) > EEPROM.read(MAX_NEG_TORQUE)
       || can.readSignal(MCU1, MCU1_MotorRatoteDirection_LSB, MCU1_MotorRatoteDirection_LEN) == MCU1_MotorRatoteDirection_ERROR
-      || can.readSignal(MCU2, MCU2_MotorTemp_LSB, MCU2_MotorTemp_LEN, 1, MCU2_MotorTemp_OFFSET) == MCU2_MotorTemp_INVALID
-      || can.readSignal(MCU2, MCU2_HardwareTemp_LSB, MCU2_HardwareTemp_LEN, 1, MCU2_HardwareTemp_OFFSET) == MCU2_HardwareTemp_INVALID
+      || can.readSignal(MCU2, MCU2_MotorTemp_LSB, MCU2_MotorTemp_LEN) == MCU2_MotorTemp_INVALID
+      || can.readSignal(MCU2, MCU2_HardwareTemp_LSB, MCU2_HardwareTemp_LEN) == MCU2_HardwareTemp_INVALID
       || can.readSignal(MCU2, MCU2_PhaseCurrSensorState_LSB, MCU2_PhaseCurrSensorState_LEN) == MCU2_PhaseCurrSensorState_ERROR
       || can.readSignal(MCU2, MCU2_MotorSensorState_LSB, MCU2_MotorSensorState_LEN) == MCU2_MotorSensorState_ERROR
       || can.readSignal(MCU2, MCU2_DC_VoltSensorState_LSB, MCU2_DC_VoltSensorState_LEN) == MCU2_DC_VoltSensorState_ERROR
@@ -221,9 +221,9 @@ void updateWarnSignals() {
       || can.readSignal(MCU2, MCU2_12V_LowVoltWarning_LSB, MCU2_12V_LowVoltWarning_LEN) == MCU2_12V_LowVoltWarning_ERROR
       || can.readSignal(MCU2, MCU2_WarningLevel_LSB, MCU2_WarningLevel_LEN) >= MCU2_WarningLevel_ERROR1
       || can.readSignal(MCU2, MCU2_MotorStallFault_LSB, MCU2_MotorStallFault_LEN) == MCU2_MotorStallFault_ERROR
-      || can.readSignal(MCU3, MCU3_DC_MainWireVolt_LSB, MCU3_DC_MainWireVolt_LEN, MCU3_DC_MainWireVolt_CONV_D) == MCU3_DC_MainWireVolt_INVALID
-      || can.readSignal(MCU3, MCU3_DC_MainWireCurr_LSB, MCU3_DC_MainWireCurr_LEN, MCU3_DC_MainWireCurr_CONV_D) == MCU3_DC_MainWireCurr_INVALID
-      || can.readSignal(MCU3, MCU3_MotorPhaseCurr_LSB, MCU3_MotorPhaseCurr_LEN, MCU3_MotorPhaseCurr_CONV_D) == MCU3_MotorPhaseCurr_INVALID
+      || can.readSignal(MCU3, MCU3_DC_MainWireVolt_LSB, MCU3_DC_MainWireVolt_LEN) == MCU3_DC_MainWireVolt_INVALID
+      || can.readSignal(MCU3, MCU3_DC_MainWireCurr_LSB, MCU3_DC_MainWireCurr_LEN) == MCU3_DC_MainWireCurr_INVALID
+      || can.readSignal(MCU3, MCU3_MotorPhaseCurr_LSB, MCU3_MotorPhaseCurr_LEN) == MCU3_MotorPhaseCurr_INVALID
       ) {
     digitalWrite(engineFaultLightPin, HIGH);
   } else {
