@@ -88,7 +88,7 @@ CanManager::CanManager(MCP_CAN* canObj) {
 
   // Fill the VCU messages with initial values (from EEPROM)
   for (uint8_t i=0; i<N_VCU_MESSAGES; i++) {
-    switch(messagesVCU[i].id) {
+    switch(messagesVCU[i].getId()) {
       case VCU1:
         messagesVCU[i].writeSignal(VCU1_TorqueReq_LSB, VCU1_TorqueReq_LEN, 0, VCU1_TorqueReq_CONV_D);
         messagesVCU[i].writeSignal(VCU1_MotorSpdReq_LSB, VCU1_MotorSpdReq_LEN, 0, VCU1_MotorSpdReq_CONV_D);
@@ -152,7 +152,7 @@ void CanManager::begin() {
 void CanManager::sendMessage(uint32_t id, int interval) {
   if (CanManager::checkError() == CAN_OK) {
     for (uint8_t i=0; i<N_VCU_MESSAGES; i++) {
-      if (messagesVCU[i].id == id) {
+      if (messagesVCU[i].getId() == id) {
         messagesVCU[i].send(interval);
       }
     }
@@ -179,7 +179,7 @@ void CanManager::update() {
       _canObj->readMsgBuf(&len, buf);
       uint32_t id = _canObj->getCanId();
       for (uint8_t i=0; i<N_OTHER_MESSAGES; i++) {
-        if (messagesOther[i].id == id) {
+        if (messagesOther[i].getId() == id) {
 
           // Update content
           for (uint8_t j=0; j<min(LSCF, len); j++) {
@@ -271,7 +271,7 @@ int CanManager::checkError() {
  */
 float CanManager::readSignal(uint32_t id, int lsb, int len, float conv, int offset) {
   for (uint8_t i=0; i<N_OTHER_MESSAGES; i++) {
-    if (messagesOther[i].id == id) {
+    if (messagesOther[i].getId() == id) {
       return messagesOther[i].readSignal(lsb, len, conv, offset);
     }
   }
@@ -290,7 +290,7 @@ float CanManager::readSignal(uint32_t id, int lsb, int len, float conv, int offs
  */
 void CanManager::writeSignal(uint32_t id, int lsb, int len, long val, float conv, int offset) {
   for (uint8_t i=0; i<N_VCU_MESSAGES; i++) {
-    if (messagesVCU[i].id == id) {
+    if (messagesVCU[i].getId() == id) {
       messagesVCU[i].writeSignal(lsb, len, val, conv, offset);
     }
   }

@@ -59,8 +59,9 @@ void updateRecu() {
 Throttle::Throttle(CanManager* canManager) {
   byte _throttlePin;
   byte _brakePedPin;
-  bool _brakePedalFunction;
+  bool _brakePedalFunction = false;
   float _prevVals[TTSF];
+  Throttle::reset();
   CanManager* _can = canManager;
 }
 

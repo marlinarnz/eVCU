@@ -17,10 +17,10 @@ PowerButton::PowerButton(CanManager* can) {
   CanManager* _can = can;
   byte _pin;
   byte _pinLED;
-  bool _MCUready;
-  bool _BMSready;
-  bool _OBCready;
-  bool _keyPosCrank;        // Flag if key position is set to "crank"
+  bool _MCUready = false;
+  bool _BMSready = false;
+  bool _OBCready = false;
+  bool _keyPosCrank = false;// Flag if key position is set to "crank"
   byte _stateLED = 0;       // LED mode for motor status indication
   int _brightnessLED = 0;   // brightness of the LED from 0 to 255
   float _prevFadeVal = 1;   // will store the last fade step (-255 to 255)
