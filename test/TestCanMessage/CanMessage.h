@@ -26,7 +26,7 @@ class CanMessage {
     bool _checkLSBandLen(int lsb, int len);
     uint8_t _getLastByte(int lsb, int len);
   public:
-    void setFrameBitsToOne();
+    void setFrameBytes(uint8_t val=0);
     uint32_t getId();
     void send(int interv=0);
     float readSignal(int lsb, int len, float conv=1, int offset=0);

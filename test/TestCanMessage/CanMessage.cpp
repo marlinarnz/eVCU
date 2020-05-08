@@ -16,21 +16,11 @@
  */
 CanMessage::CanMessage(uint32_t ident, MCP_CAN* canObj, int interv)
   : _id(ident), _canObj(canObj), _interval(interv), _lastSent(0), _frame{} {
-  for (uint8_t i=0; i<LSCF; i++) {
-    _frame[i] = 0;
-  }
+  CanMessage::setFrameBytes(0);
 }
 // Default constructor to enable arrays
 CanMessage::CanMessage()
   : _id(0), _canObj(NULL), _interval(0), _lastSent(0), _frame{} {}
-
-
-// Just for testing
-void CanMessage::setFrameBitsToOne() {
-  for (uint8_t i=0; i<LSCF; i++) {
-    _frame[i] = 255;
-  }
-}
 
 
 /* ============================== Return ID ===============================
@@ -39,6 +29,17 @@ void CanMessage::setFrameBitsToOne() {
  */
 uint32_t CanMessage::getId() {
   return _id;
+}
+
+
+/* ============================== Set frame ===============================
+ * Sets each byte of the frame to the given value. Can be used for testing.
+ * @param val: (optional) byte. Default 0
+ */
+void CanMessage::setFrameBytes(uint8_t val) {
+  for (uint8_t i=0; i<LSCF; i++) {
+    _frame[i] = val;
+  }
 }
 
 
@@ -75,14 +76,22 @@ float CanMessage::readSignal(int lsb, int len, float conv, int offset) {
     uint8_t lastByte = CanMessage::_getLastByte(lsb, len);
     for (int i=int(lsb / 8); i>=lastByte; i--) {
       uint8_t newByte = _frame[i];
+      
       // Truncate last byte
       if (i == lastByte) {
-        newByte &= 0xFF >> 8 - ((lsb + len) % 8);
+        uint8_t mask = 255;
+        uint8_t endBit = (lsb + len) % 8;
+        if (endBit != 0) {
+          mask >>= (8 - endBit);
+        }
+        newByte &= mask;
       }
+      
       // Add it to the signal value
       sig <<= 8;
       sig |= newByte;
     }
+    
     // Truncate the first byte
     sig >>= lsb % 8;
     
@@ -159,5 +168,10 @@ bool CanMessage::_checkLSBandLen(int lsb, int len) {
  * @return: uint8_t number of last byte of message
  */
 uint8_t CanMessage::_getLastByte(int lsb, int len) {
-  return int(min(lsb, lsb - len + 8) / 8);
+  uint8_t startByte = int(lsb / 8);
+  if (lsb % 8 + len <= 8) {
+    return startByte;
+  } else {
+    return startByte - int((lsb%8 + len) / 8);
+  }
 }

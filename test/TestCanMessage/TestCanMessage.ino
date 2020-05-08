@@ -138,50 +138,74 @@ test(readSignal_conv_returnZero) {
               zero);
 }
 
-test(readSignal_testFrame_firstBit_success) {
+test(readSignal_testByte255_firstBit_success) {
   float result = 1;
   CanMessage classUnderTestLocal(id, &CAN, 0);
-  classUnderTestLocal.setFrameBitsToOne();
+  classUnderTestLocal.setFrameBytes(255); // 0b1111 1111
   assertEqual(classUnderTestLocal.readSignal(0, 1),
               result);
 }
 
-test(readSignal_testFrame_firstByte_success) {
-  float result = 255;
+test(readSignal_testByte170_firstByte_success) {
+  float result = 170;
   CanMessage classUnderTestLocal(id, &CAN, 0);
-  classUnderTestLocal.setFrameBitsToOne();
+  classUnderTestLocal.setFrameBytes(170); // 0b1010 1010
   assertEqual(classUnderTestLocal.readSignal(0, 8),
               result);
 }
 
-test(readSignal_testFrame_lastBit_success) {
+test(readSignal_testByte170_lastBit_success) {
   float result = 1;
   CanMessage classUnderTestLocal(id, &CAN, 0);
-  classUnderTestLocal.setFrameBitsToOne();
+  classUnderTestLocal.setFrameBytes(170); // 0b1010 1010
   assertEqual(classUnderTestLocal.readSignal(63, 1),
               result);
 }
 
-test(readSignal_testFrame_lastByte_success) {
-  float result = 255;
+test(readSignal_testByte170_lastByte_success) {
+  float result = 170;
   CanMessage classUnderTestLocal(id, &CAN, 0);
-  classUnderTestLocal.setFrameBitsToOne();
+  classUnderTestLocal.setFrameBytes(170); // 0b1010 1010
   assertEqual(classUnderTestLocal.readSignal(56, 8),
               result);
 }
 
-test(readSignal_testFrame_twoBytes_success) {
-  float result = 65535;
+test(readSignal_testByte170_twoBytes_success) {
+  float result = 43690;
   CanMessage classUnderTestLocal(id, &CAN, 0);
-  classUnderTestLocal.setFrameBitsToOne();
-  assertEqual(classUnderTestLocal.readSignal(43, 16),
+  classUnderTestLocal.setFrameBytes(170); // 0b1010 1010
+  assertEqual(classUnderTestLocal.readSignal(44, 16),
               result);
 }
 
-test(readSignal_testFrame_fourBytes_success) {
-  float result = 16777215;
+test(readSignal_testByte170_twoBytesUnevenLsb_success) {
+  float result = 21845;
   CanMessage classUnderTestLocal(id, &CAN, 0);
-  classUnderTestLocal.setFrameBitsToOne();
+  classUnderTestLocal.setFrameBytes(170); // 0b1010 1010
+  assertEqual(classUnderTestLocal.readSignal(45, 16),
+              result);
+}
+
+test(readSignal_testByte170_twoBytesUnevenLsbLen12_success) {
+  float result = 1365;
+  CanMessage classUnderTestLocal(id, &CAN, 0);
+  classUnderTestLocal.setFrameBytes(170); // 0b1010 1010
+  assertEqual(classUnderTestLocal.readSignal(45, 12),
+              result);
+}
+
+test(readSignal_testByte170_twoBytesUnevenLsbLen13_success) {
+  float result = 5461;
+  CanMessage classUnderTestLocal(id, &CAN, 0);
+  classUnderTestLocal.setFrameBytes(170); // 0b1010 1010
+  assertEqual(classUnderTestLocal.readSignal(45, 13),
+              result);
+}
+
+test(readSignal_testByte170_fourBytes_success) {
+  float result = 2863311530;
+  CanMessage classUnderTestLocal(id, &CAN, 0);
+  classUnderTestLocal.setFrameBytes(170); // 0b1010 1010
   assertEqual(classUnderTestLocal.readSignal(58, 32),
               result);
 }
