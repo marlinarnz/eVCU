@@ -61,9 +61,11 @@ const int PBDD = 1000;        // debounce delay for button reading
 #define CAN_BUS_FAULT 3
 #define CAN_INIT_SUCCESS 4
 #define CAN_MESSAGE_INIT_MISSING 5
-#define MOTOR_WRONG_DIRECTION 6
+#define CAN_SIGNAL_WRONG_ID 6
+#define CAN_SIGNAL_WRONG_LSB_LEN 7
 
-#define BRAKE_PEDAL_WRONG_SETTINGS 16
+#define MOTOR_WRONG_DIRECTION 12
+#define BRAKE_PEDAL_WRONG_SETTINGS 13
 
 
 /* ============================== EEPROM =================================

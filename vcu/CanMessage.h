@@ -20,17 +20,22 @@ class CanMessage {
   private:
     MCP_CAN* _canObj;
     uint8_t _frame[LSCF];
+    uint32_t _id;
     int _interval;
     long _lastSent;
     bool _checkLSBandLen(int lsb, int len);
     uint8_t _getLastByte(int lsb, int len);
   public:
-    uint32_t id;
+    void setFrameBytes(uint8_t val=0);
+    uint32_t getId();
     void send(int interv=0);
-    float readSignal(int lsb, int len, float conv=1, int offset=0);
+    float readSignalLE(int lsb, int len, float conv=1, int offset=0);
+    float readSignalBE(int lsb, int len, float conv=1, int offset=0);
+    float readByte(int b, float conv=1, int offset=0);
     void writeSignal(int lsb, int len, long val, float conv=1, int offset=0);
+    void writeByte(int b, long val, float conv=1, int offset=0);
     CanMessage();
-    CanMessage(int ident, MCP_CAN* canObj, int interv);
+    CanMessage(uint32_t ident, MCP_CAN* canObj, int interv);
 };
 
 #endif

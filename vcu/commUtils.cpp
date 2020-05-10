@@ -183,7 +183,7 @@ void CanManager::update() {
 
           // Update content
           for (uint8_t j=0; j<min(LSCF, len); j++) {
-            messagesOther[i].writeSignal(8*j, 8, buf[j]);
+            messagesOther[i].writeByte(j, buf[j]);
           }
 
           // List of occasional commands to react to
@@ -272,9 +272,19 @@ int CanManager::checkError() {
 float CanManager::readSignal(uint32_t id, int lsb, int len, float conv, int offset) {
   for (uint8_t i=0; i<N_OTHER_MESSAGES; i++) {
     if (messagesOther[i].getId() == id) {
-      return messagesOther[i].readSignal(lsb, len, conv, offset);
+      float sig;
+      if (lsb % 8 == 0 && len == 8) {
+        sig = messagesOther[i].readByte(int(lsb / 8), conv, offset);
+      } else {
+        sig = messagesOther[i].readSignalBE(lsb, len, conv, offset);
+      }
+      if (sig == -1) {
+        report("CAN_SIGNAL_WRONG_LSB_LEN", 2);
+      }
+      return sig;
     }
   }
+  report("CAN_SIGNAL_WRONG_ID", 2);
   return -1;
 }
 
@@ -291,7 +301,11 @@ float CanManager::readSignal(uint32_t id, int lsb, int len, float conv, int offs
 void CanManager::writeSignal(uint32_t id, int lsb, int len, long val, float conv, int offset) {
   for (uint8_t i=0; i<N_VCU_MESSAGES; i++) {
     if (messagesVCU[i].getId() == id) {
-      messagesVCU[i].writeSignal(lsb, len, val, conv, offset);
+      if (lsb % 8 == 0 && len == 8) {
+        messagesVCU[i].writeByte(int(lsb / 8), val, conv, offset);
+      } else {
+        messagesVCU[i].writeSignal(lsb, len, val, conv, offset);
+      }
     }
   }
 }
