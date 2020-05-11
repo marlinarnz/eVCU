@@ -9,6 +9,7 @@
 #include "Arduino.h"
 #include "constants.h"
 #include "commUtils.h"
+#include "CanManager.h"
 
 void cool(int motorTemp, int controllerTemp);
 void updateRecu();

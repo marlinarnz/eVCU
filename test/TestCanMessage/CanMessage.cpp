@@ -105,6 +105,8 @@ void CanMessage::writeByte(int b, long val, float conv, int offset) {
  * @param conv: (optional) float conversion factor of physical signal value
  * @param offset: (optional) integer offset of physical signal value
  * @return: float signal content, already converted. -1 as error code
+ * 
+ * TODO: Properly return four byte signals with odd lsb
  */
 float CanMessage::readSignalLE(int lsb, int len, float conv, int offset) {
   if (CanMessage::_checkLSBandLen(lsb, len)) {

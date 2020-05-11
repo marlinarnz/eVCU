@@ -1,5 +1,6 @@
 /* ============================== Power button ============================
- * Formulation of the PowerButton class functionality
+ * The PowerButton starts and stops the vehicle and signals its motor status
+ * with a light.
  */
 
 #include "PowerButton.h"

@@ -292,10 +292,24 @@ test(readSignalBE_testByte170_threeBytes_success) {
               result);
 }
 
+test(readSignalBE_testByte170_threeBytesOdd_success) {
+  float result = 5592405;
+  classUnderTest.setFrameBytes(170); // 0b1010 1010
+  assertEqual(classUnderTest.readSignalBE(35, 24),
+              result);
+}
+
 test(readSignalBE_testByte170_fourBytes_success) {
   float result = 2863311530;
   classUnderTest.setFrameBytes(170); // 0b1010 1010
-  assertEqual(classUnderTest.readSignalBE(58, 32),
+  assertEqual(classUnderTest.readSignalBE(56, 32),
+              result);
+}
+
+test(readSignalBE_testByte170_fourBytesOdd_success) {
+  float result = 2863311530;
+  classUnderTest.setFrameBytes(170); // 0b1010 1010
+  assertEqual(classUnderTest.readSignalBE(59, 32),
               result);
 }
 

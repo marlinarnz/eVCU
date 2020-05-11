@@ -7,7 +7,7 @@
 #define PowerButton_h
 
 #include <Arduino.h>
-#include "commUtils.h"
+#include "CanManager.h"
 
 class PowerButton {
   private:

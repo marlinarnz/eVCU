@@ -40,6 +40,7 @@
 #include "constants.h"        // Values for car operation
 #include "driveUtils.h"       // Utility functions for driving and co
 #include "commUtils.h"        // Utility functions for communication
+#include "CanManager.h"       // CAN bus communication manager
 
 
 /* ============================== Variables and objects =================== */
