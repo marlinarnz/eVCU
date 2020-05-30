@@ -13,30 +13,34 @@
  */
 void report(String msg, int level, bool warn) {  //TODO
   if (!Serial.available()) {
-    Serial.begin(115200);       // Initialize the USB serial
+    Serial.begin(9600);         // Initialize the USB serial
     while (!Serial) {;}         // Wait until it started. Only for native port
   }
-  Serial.println(msg);
-
-  //TODO fill bytes of CAN frame VCUMSG with id of msg (6 bits) and level (2 bits)
-  // results in 63 possible messages
-  //
-  // Report the loop time on debug level
-  //String loopTime = String(millis() - lastLoop);
-  //report("Loop time (ms): " + loopTime, 0);
-
-  if (warn) {
-    setWarningLevel(level);
+  if (level <= 3 && level >= 0) {
+    Serial.println(msg);
+  
+    //TODO fill bytes of CAN frame VCUMSG with id of msg (6 bits) and level (2 bits)
+    // results in 63 possible messages
+    //
+    // Report the loop time on debug level
+    //String loopTime = String(millis() - lastLoop);
+    //report("Loop time (ms): " + loopTime, 0);
+  
+    if (warn) {
+      setWarningLevel(level);
+    }
   }
 }
 
 
 /* ============================== Warning level ===========================
- * Sets the warning level of the VCU
+ * Sets the warning level of the VCU to a valid level (0 to 3)
  * @param lvl: integer 0 = "OK"; 1 = "low"; 2 = "medium"; 3 = "high"
  */
 void setWarningLevel(int lvl) {
-  EEPROM.put(VCU1_WARNING_LEVEL, lvl);
+  if (lvl <= 3 && lvl >= 0) {
+    EEPROM.put(VCU1_WARNING_LEVEL, lvl);
+  }
 }
 
 
