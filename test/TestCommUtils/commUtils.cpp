@@ -12,9 +12,9 @@
  * @param warn: (optional) boolean whether to set the VCU warning level
  */
 void report(String msg, int level, bool warn) {  //TODO
-  if (!Serial.available()) {
+  if (!Serial) {
     Serial.begin(9600);         // Initialize the USB serial
-    while (!Serial) {;}         // Wait until it started. Only for native port
+    delay(10);
   }
   if (level <= 3 && level >= 0) {
     Serial.println(msg);

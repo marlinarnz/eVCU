@@ -11,22 +11,19 @@
  * for every known ID as own attributes.
  * @param canObj: MCP_CAN class object pointer
  */
-CanManager::CanManager(MCP_CAN* canObj) {
-  MCP_CAN* _canObj = canObj;
-  // Construct the known messages
-  CanMessage messagesVCU[N_VCU_MESSAGES] = {
+CanManager::CanManager(MCP_CAN* canObj)
+  : _canObj(canObj),
+  messagesVCU{
     {VCU1, _canObj, VCU1_INTERVAL},
     {VCU2, _canObj, VCU2_INTERVAL},
     {VCU3, _canObj, VCU3_INTERVAL}
-  };
-  CanMessage messagesOther[N_OTHER_MESSAGES] = {
+  }, messagesOther{
     {MCU1, _canObj, MCU1_INTERVAL},
     {MCU2, _canObj, MCU2_INTERVAL},
     {MCU3, _canObj, MCU3_INTERVAL},
     {UI_ThrottlePos, _canObj, UI_ThrottlePos_INTERVAL},
     {UI_DriveSettings, _canObj, UI_DriveSettings_INTERVAL}
-  };
-
+  } {
   // Fill the VCU messages with initial values (from EEPROM)
   for (uint8_t i=0; i<N_VCU_MESSAGES; i++) {
     switch(messagesVCU[i].getId()) {
@@ -61,7 +58,8 @@ CanManager::CanManager(MCP_CAN* canObj) {
   }
 }
 // Default constructor
-CanManager::CanManager() {
+CanManager::CanManager() 
+  : _canObj(NULL), messagesVCU{}, messagesOther{} {
 }
 
 
