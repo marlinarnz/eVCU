@@ -38,7 +38,8 @@
 #include <EEPROM.h>           // EEPROM storage access
 #include "PowerButton.h"      // Class of the start/stop button
 #include "constants.h"        // Values for car operation
-#include "driveUtils.h"       // Utility functions for driving and co
+#include "driveUtils.h"       // Utility functions for driving
+#include "Throttle.h"         // Throttle class
 #include "commUtils.h"        // Utility functions for communication
 #include "CanManager.h"       // CAN bus communication manager
 
@@ -99,12 +100,10 @@ void setup() {
 void loop() {
   can.update();               // Read news, spread news, save news
   if (checkMotorState()
-      && !on) {               // Read the motor status
-    throttle.reset();
-    on = true;
-  } else {
-    on = false;
+      && !on) {
+    throttle.reset();         // Reset the throttle if motor gets started
   }
+  on = checkMotorState();     // Read the motor status
   powerButton.update();       // Read if start/stop button was pressed
   updateWarnSignals();        // Manage all the warn signals
   if (on) {
@@ -182,11 +181,12 @@ void updateWarnSignals() {
   
   // Read CAN signals and check for errors or warnings from other ECUs
   // Fatal errors: Need a reset to eventually start the car again
-  if (can.readSignal(VCU2, VCU2_UrgencyCutOffPowerReq_LSB, VCU2_UrgencyCutOffPowerReq_LEN) == VCU2_UrgencyCutOffPowerReq_ERROR) {
+  if (false) {
     digitalWrite(mainContactorPin, LOW);
     powerButton.stopMotor();
     powerButton.setMCUready(false);
     setWarningLevel(3);
+    can.writeSignal(VCU2, VCU2_UrgencyCutOffPowerReq_LSB, VCU2_UrgencyCutOffPowerReq_LEN, VCU2_UrgencyCutOffPowerReq_ERROR);
   }
   // Motor/MCU errors
   if (can.readSignal(MCU2, MCU2_DC_MainWireOverCurrFault_LSB, MCU2_DC_MainWireOverCurrFault_LEN) == MCU2_DC_MainWireOverCurrFault_ERROR
