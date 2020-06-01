@@ -10,18 +10,26 @@ using aunit::TestRunner;
 bool on = false;
 unsigned long prechargeStart = 0;
 bool returnCheckError = CAN_OK;
-float returnReadSignal = 0;
 
 CanManager mock;
 PowerButton classUnderTest(&mock);
 
+void updateButton() {
+  char rx;
+  while(rx != 'y') {
+    classUnderTest.update();
+    rx = Serial.read();
+    delay(4);
+  }
+}
+
 // Prepare the serial port
 void setup() {
     Serial.begin(9600);
-    delay(50);
     TestRunner::setTimeout(180);
-    Serial.println("In case nothing happens on the Serial, there is a loop test at work that can be ended by entering [y].");
     classUnderTest.begin(powerButtonPin,powerButtonLEDPin,true);
+    Serial.println("Default light state");
+    delay(1000);
 }
 
 // Call the test runner in loop
@@ -30,12 +38,14 @@ void loop() {
 }
 
 test(startMotor_MCUnotReady_fail) {
+  on = false;
   classUnderTest.setMCUready(false);
   classUnderTest.startMotor();
   assertTrue(!on);
 }
 
 test(startMotor_MCUReady_success) {
+  on = false;
   classUnderTest.setMCUready(true);
   classUnderTest.startMotor();
   assertTrue(on);
@@ -43,39 +53,42 @@ test(startMotor_MCUReady_success) {
 
 test(stopMotor_MCUReady_success) {
   classUnderTest.setMCUready(true);
-  classUnderTest.startMotor();
-  assertTrue(on);
+  on = true;
   classUnderTest.stopMotor();
   assertTrue(!on);
 }
 
-testing(update_MCUReady_onOffLightsWork) {
+test(update_MCUReady_onOffLightsWork) {
+  Serial.println("Running test update_MCUReady_onOffLightsWork until 'y' is entered.");
   classUnderTest.setMCUready(true);
-  classUnderTest.update();
-  char rx;
-  rx = Serial.read();
-  if (rx == 'y') {
-    pass();
-  }
+  on = false;
+  updateButton();
+  assertTrue(true);
 }
 
-testing(update_MCUnotReady_errorLight) {
+test(update_MCUnotReady_errorLight) {
+  Serial.println("Running test update_MCUnotReady_errorLight until 'y' is entered.");
   classUnderTest.setMCUready(false);
-  classUnderTest.update();
-  char rx;
-  rx = Serial.read();
-  if (rx == 'y') {
-    pass();
-  }
+  on = false;
+  updateButton();
+  assertTrue(true);
 }
 
-/*test(userinteraction) {
-  Serial.println("Have you seen a message on the serial? [y/n]");
-  char rx;
-  while(rx != 'y' && rx != 'n') {
-    delay(10);
-    rx = Serial.read();
-  }
-  char result = 'y';
-  assertEqual(rx, result);
-}*/
+test(mock_readSignal) {
+  float zero = 0;
+  float one = 1;
+  assertEqual(mock.readSignal(1,1,1), zero);
+  assertEqual(mock.readSignal(OBC1, OBC1_BatteryConnectStatus_LSB, OBC1_BatteryConnectStatus_LEN), one);
+}
+
+test(mock_writeSignal) {
+  on = false;
+  mock.writeSignal(VCU1, VCU1_KeyPosition_LSB, VCU1_KeyPosition_LEN, VCU1_KeyPosition_CRANK);
+  assertTrue(on);
+  mock.writeSignal(VCU1, VCU1_KeyPosition_LSB, VCU1_KeyPosition_LEN, VCU1_KeyPosition_ACC);
+  assertTrue(!on);
+}
+
+test(mock_checkError) {
+  assertEqual(mock.checkError(), CAN_OK);
+}

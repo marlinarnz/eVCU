@@ -8,6 +8,7 @@
 
 #include "Arduino.h"
 #include "CanManager.h"
+#include "commUtils.h"
 #include "constants.h"
 
 class PowerButton {
@@ -21,6 +22,7 @@ class PowerButton {
     bool _keyPosCrank;
     byte _stateLED;
     int _brightnessLED;
+    float _fadeVal;
     float _prevFadeVal;
     unsigned long _previousMillis;
     unsigned long _lastDebounce;

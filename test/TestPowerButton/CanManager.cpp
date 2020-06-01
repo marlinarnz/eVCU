@@ -6,14 +6,16 @@
 
 extern bool on;
 extern bool returnCheckError;
-extern float returnReadSignal;
 
 CanManager::CanManager() {
   ;
 }
 
 float CanManager::readSignal(long id, int lsb, int len, float conv, int offset) {
-  float val = returnReadSignal;
+  float val = 0;
+  if (id==OBC1 && lsb==OBC1_BatteryConnectStatus_LSB && len==OBC1_BatteryConnectStatus_LEN) {
+    val = 1;
+  }
   return val;
 }
 

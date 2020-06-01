@@ -7,25 +7,17 @@
 
 extern bool on;
 extern unsigned long prechargeStart;
-float fadeVal = 1;
 
 /* ============================== Constructor =============================
  * Instantiates a PowerButton object with its private attributes
  * @param can: CanManager object pointer
  */
-PowerButton::PowerButton(CanManager* can) {
-  CanManager* _can = can;
-  byte _pin;
-  byte _pinLED;
-  bool _MCUready = false;
-  bool _BMSready = false;
-  bool _OBCready = false;
-  bool _keyPosCrank = false;// Flag if key position is set to "crank"
-  byte _stateLED = 0;       // LED mode for motor status indication
-  int _brightnessLED = 0;   // brightness of the LED from 0 to 255
-  float _prevFadeVal = 1;   // will store the last fade step (-255 to 255)
-  unsigned long _previousMillis = millis();  // will store last time LED was updated
-  unsigned long _lastDebounce = millis();  // will store last time button was pressed
+PowerButton::PowerButton(CanManager* can)
+    : _can(can), _pin(0), _pinLED(),
+    _MCUready(false), _OBCready(false), _BMSready(false),
+    _keyPosCrank(false), _stateLED(0), _brightnessLED(0),
+    _fadeVal(1), _prevFadeVal(1), _previousMillis(0), _lastDebounce(0)
+{
 }
 
 
@@ -41,23 +33,22 @@ void PowerButton::begin(byte pin, byte pinLED, bool MCUready) {
   _pin = pin;
   _pinLED = pinLED;
   _MCUready = MCUready;
+  PowerButton::_setLED(42);
+  PowerButton::_updateLED();
 }
 
 
 /* ============================== Update ==================================
  * Updates the button state if debounce delay is over and starts or stops
- * the motor. Does not react when state is set to error. Also updates the
+ * the motor. Does not react when MCU is not ready. Also updates the
  * light pin.
  */
 void PowerButton::update() {
-  if (!_MCUready) {
-    PowerButton::_setLED(3);
-  }
   if (_keyPosCrank && millis() - _lastDebounce > PBDD) {
     _can->writeSignal(VCU1, VCU1_KeyPosition_LSB, VCU1_KeyPosition_LEN, VCU1_KeyPosition_ON);
     _keyPosCrank = false;
   }
-  if ((_stateLED != 3)
+  if (_MCUready
       && (digitalRead(_pin) == HIGH)
       && (millis() - _lastDebounce > PBDD)) {
     _lastDebounce = millis();
@@ -66,12 +57,14 @@ void PowerButton::update() {
       PowerButton::_updateLED();
       PowerButton::startMotor();
       PowerButton::_setLED(2);
+      report("STARTED_MOTOR", 1); // TODO
     } else {
       PowerButton::_setLED(0);
       PowerButton::_updateLED();
       PowerButton::stopMotor();
       PowerButton::_setLED(1);
       _brightnessLED = 0;
+      report("STOPPED_MOTOR", 1); // TODO
     }
   }
   PowerButton::_updateLED();
@@ -83,10 +76,12 @@ void PowerButton::update() {
  */
 void PowerButton::startMotor() {
   // Check MCU
-  if (_can->readSignal(MCU2, MCU2_WarningLevel_LSB, MCU2_WarningLevel_LEN) < MCU2_WarningLevel_ERROR3
-      || _can->readSignal(MCU2, MCU2_MotorSystemState_LSB, MCU2_MotorSystemState_LEN) != MCU2_MotorSystemState_ERROR
+  if (!_MCUready
+      || _can->readSignal(MCU2, MCU2_WarningLevel_LSB, MCU2_WarningLevel_LEN) >= MCU2_WarningLevel_ERROR3
+      || _can->readSignal(MCU2, MCU2_MotorSystemState_LSB, MCU2_MotorSystemState_LEN) == MCU2_MotorSystemState_ERROR
       || _can->checkError() != CAN_OK) {
     _MCUready = false;
+    report("MOTOR_START_FAIL_DUE_MCU", 2); // TODO
   } else {
     _MCUready = true;
   }
@@ -103,6 +98,7 @@ void PowerButton::startMotor() {
     _OBCready = true;
   } else {
     _OBCready = false;
+    report("MOTOR_START_FAIL_DUE_OBC", 2); // TODO
   }
   
   // Check BMS
@@ -111,6 +107,7 @@ void PowerButton::startMotor() {
     //TODO
 
     _BMSready = false;
+    report("MOTOR_START_FAIL_DUE_BMS", 2); // TODO
   } else {
     _BMSready = true;
   }
@@ -140,6 +137,9 @@ void PowerButton::stopMotor() {
  */
 void PowerButton::setMCUready(bool state) {
   _MCUready = state;
+  if (!state) {
+    PowerButton::_setLED(3);
+  }
 }
 
 
@@ -162,19 +162,19 @@ void PowerButton::_updateLED() {
       digitalWrite(_pinLED, LOW);
       break;
     case 1:
-      fadeVal = (millis() - _previousMillis) * PBFF;
+      _fadeVal = (millis() - _previousMillis) * PBFF;
       if (_prevFadeVal >= 0) {
-        if ((_brightnessLED + fadeVal) < 230) {
-          _brightnessLED += fadeVal;
-          _prevFadeVal = fadeVal;
+        if ((_brightnessLED + _fadeVal) < 230) {
+          _brightnessLED += _fadeVal;
+          _prevFadeVal = _fadeVal;
         } else {
           _brightnessLED = 230;
           _prevFadeVal = - 1;
         }
       } else {
-        if ((_brightnessLED - fadeVal) > 0) {
-          _brightnessLED -= fadeVal;
-          _prevFadeVal = - fadeVal;
+        if ((_brightnessLED - _fadeVal) > 0) {
+          _brightnessLED -= _fadeVal;
+          _prevFadeVal = - _fadeVal;
         } else {
           _brightnessLED = 0;
           _prevFadeVal = 1;
