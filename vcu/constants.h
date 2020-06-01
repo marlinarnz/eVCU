@@ -47,7 +47,7 @@ const uint8_t TTSF = 5;       // Throttle torque smooth factor (length of array)
 
 // PowerButton settings
 const int PBBF = 500;         // blink frequency for LED state 2 (error)
-const float PBFF = 0.15;      // brightness change per ms for LED state 1 (off)
+const float PBFF = 0.06;      // brightness change per ms for LED state 1 (off)
 const int PBDD = 1000;        // debounce delay for button reading
 
 

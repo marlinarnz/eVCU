@@ -16,8 +16,13 @@ PowerButton::PowerButton(CanManager* can)
     : _can(can), _pin(0), _pinLED(),
     _MCUready(false), _OBCready(false), _BMSready(false),
     _keyPosCrank(false), _stateLED(0), _brightnessLED(0),
-    _fadeVal(1), _prevFadeVal(1), _previousMillis(0), _lastDebounce(0)
-{
+    _fadeVal(1), _prevFadeVal(1), _previousMillis(0), _lastDebounce(0) {
+}
+PowerButton::PowerButton()
+    : _can(NULL), _pin(0), _pinLED(),
+    _MCUready(false), _OBCready(false), _BMSready(false),
+    _keyPosCrank(false), _stateLED(0), _brightnessLED(0),
+    _fadeVal(1), _prevFadeVal(1), _previousMillis(0), _lastDebounce(0) {
 }
 
 
@@ -33,7 +38,7 @@ void PowerButton::begin(byte pin, byte pinLED, bool MCUready) {
   _pin = pin;
   _pinLED = pinLED;
   _MCUready = MCUready;
-  PowerButton::_setLED(42);
+  PowerButton::_setLED(0);
   PowerButton::_updateLED();
 }
 
@@ -56,14 +61,11 @@ void PowerButton::update() {
       PowerButton::_setLED(0);
       PowerButton::_updateLED();
       PowerButton::startMotor();
-      PowerButton::_setLED(2);
       report("STARTED_MOTOR", 1); // TODO
     } else {
       PowerButton::_setLED(0);
       PowerButton::_updateLED();
       PowerButton::stopMotor();
-      PowerButton::_setLED(1);
-      _brightnessLED = 0;
       report("STOPPED_MOTOR", 1); // TODO
     }
   }
@@ -121,13 +123,14 @@ void PowerButton::startMotor() {
     _can->writeSignal(VCU1, VCU1_WorkMode_LSB, VCU1_WorkMode_LEN, VCU1_WorkMode_TORQUE);
     _can->writeSignal(VCU1, VCU1_MotorMode_LSB, VCU1_MotorMode_LEN, VCU1_MotorMode_POWERDRIVE);
     _keyPosCrank = true;
+    PowerButton::_setLED(2);
   }
 }
 
 void PowerButton::stopMotor() {
   _can->writeSignal(VCU1, VCU1_MotorMode_LSB, VCU1_MotorMode_LEN, VCU1_MotorMode_STANDBY);
   _can->writeSignal(VCU1, VCU1_KeyPosition_LSB, VCU1_KeyPosition_LEN, VCU1_KeyPosition_ACC);
-  
+  PowerButton::_setLED(1);
 }
 
 
@@ -150,6 +153,10 @@ void PowerButton::setMCUready(bool state) {
  */
 void PowerButton::_setLED(byte state) {
   _stateLED = state;
+  if (state == 1) {             // Start settings for the fading
+    _brightnessLED = 0;
+    _prevFadeVal = - 1;
+  }
 }
 
 
@@ -159,16 +166,19 @@ void PowerButton::_setLED(byte state) {
 void PowerButton::_updateLED() {
   switch (_stateLED) {
     case 0:
-      digitalWrite(_pinLED, LOW);
+      analogWrite(_pinLED, 0);
       break;
     case 1:
-      _fadeVal = (millis() - _previousMillis) * PBFF;
+      _fadeVal = (millis() - _previousMillis) * PBFF; // Fading slope
+      if (_brightnessLED < 25) {                      // Adjustment
+        _fadeVal *= 0.3;
+      }
       if (_prevFadeVal >= 0) {
-        if ((_brightnessLED + _fadeVal) < 230) {
+        if ((_brightnessLED + _fadeVal) < 100) {
           _brightnessLED += _fadeVal;
           _prevFadeVal = _fadeVal;
         } else {
-          _brightnessLED = 230;
+          _brightnessLED = 100;
           _prevFadeVal = - 1;
         }
       } else {
@@ -184,7 +194,7 @@ void PowerButton::_updateLED() {
       analogWrite(_pinLED, int(_brightnessLED));
       break;
     case 2:
-      digitalWrite(_pinLED, HIGH);
+      analogWrite(_pinLED, 255);
       break;
     case 3:
       if (millis() - _previousMillis >= PBBF) {
@@ -194,7 +204,7 @@ void PowerButton::_updateLED() {
         } else {
           _brightnessLED = 0;
         }
-        digitalWrite(_pinLED, _brightnessLED);
+        analogWrite(_pinLED, int(_brightnessLED));
       }
       break;
     default:

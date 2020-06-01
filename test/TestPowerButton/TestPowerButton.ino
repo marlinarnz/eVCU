@@ -14,12 +14,12 @@ bool returnCheckError = CAN_OK;
 CanManager mock;
 PowerButton classUnderTest(&mock);
 
-void updateButton() {
+void updateButton(int del) {
   char rx;
   while(rx != 'y') {
     classUnderTest.update();
     rx = Serial.read();
-    delay(4);
+    delay(del);
   }
 }
 
@@ -28,8 +28,6 @@ void setup() {
     Serial.begin(9600);
     TestRunner::setTimeout(180);
     classUnderTest.begin(powerButtonPin,powerButtonLEDPin,true);
-    Serial.println("Default light state");
-    delay(1000);
 }
 
 // Call the test runner in loop
@@ -58,11 +56,19 @@ test(stopMotor_MCUReady_success) {
   assertTrue(!on);
 }
 
-test(update_MCUReady_onOffLightsWork) {
-  Serial.println("Running test update_MCUReady_onOffLightsWork until 'y' is entered.");
+test(update_MCUReady_onOffWorks) {
+  Serial.println("Running test update_MCUReady_onOffWorks until 'y' is entered.");
   classUnderTest.setMCUready(true);
   on = false;
-  updateButton();
+  updateButton(3);
+  assertTrue(true);
+}
+
+test(update_MCUReadyLongDelay_onOffWorks) {
+  Serial.println("Running test update_MCUReadyLongDelay_onOffWorks until 'y' is entered.");
+  classUnderTest.setMCUready(true);
+  on = false;
+  updateButton(14);
   assertTrue(true);
 }
 
@@ -70,7 +76,7 @@ test(update_MCUnotReady_errorLight) {
   Serial.println("Running test update_MCUnotReady_errorLight until 'y' is entered.");
   classUnderTest.setMCUready(false);
   on = false;
-  updateButton();
+  updateButton(4);
   assertTrue(true);
 }
 

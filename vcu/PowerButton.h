@@ -6,8 +6,10 @@
 #ifndef PowerButton_h
 #define PowerButton_h
 
-#include <Arduino.h>
+#include "Arduino.h"
 #include "CanManager.h"
+#include "commUtils.h"
+#include "constants.h"
 
 class PowerButton {
   private:
@@ -19,7 +21,8 @@ class PowerButton {
     bool _OBCready;
     bool _keyPosCrank;
     byte _stateLED;
-    int _brightnessLED;
+    float _brightnessLED;
+    float _fadeVal;
     float _prevFadeVal;
     unsigned long _previousMillis;
     unsigned long _lastDebounce;
@@ -32,6 +35,7 @@ class PowerButton {
     void update();
     void begin(byte pin, byte pinLED, bool MCUready);
     PowerButton(CanManager* can);
+    PowerButton();
 };
 
 #endif
