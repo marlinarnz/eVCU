@@ -99,11 +99,11 @@ void setup() {
 /* ============================== Main loop  ============================== */
 void loop() {
   can.update();               // Read news, spread news, save news
-  if (checkMotorState()
-      && !on) {
+  bool running = checkMotorState();
+  if (running && !on) {
     throttle.reset();         // Reset the throttle if motor gets started
   }
-  on = checkMotorState();     // Read the motor status
+  on = running;               // Read the motor status
   powerButton.update();       // Read if start/stop button was pressed
   updateWarnSignals();        // Manage all the warn signals
   if (on) {

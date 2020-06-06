@@ -1,14 +1,12 @@
 # eVCU
-This project contains C++ code for an electric vehicle control unit (VCU) based on an Arduino. It is intended to be compliant with German TÜV requirements.
+This project contains C++ code for an electric vehicle control unit (eVCU) based on an Arduino. It is intended to be compliant with German TÜV requirements.
+The advantage of this code against other project is the possibility to communicate with every possible ECU via CAN-bus. It is currently adjusted to the set of CAN messages from the AlphaElectrics APEV528 PMSM controller but can easily be extendet to other CAN signals.
 
 Next steps:
-* Unit testing (oh oh, no test-driven development here)
-* Dry testing in the CAN-bus network
+* Component testing on the working CAN-bus
 * Build the electric vehicle
 * Get admission
 * Drive
-
-Description follows.
 
 # Hardware
 The core modules of the eVCU are
