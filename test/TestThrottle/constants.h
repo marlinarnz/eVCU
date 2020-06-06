@@ -10,8 +10,8 @@
 
 
 /* ============================== Pins ==================================== */
-#define throttlePin 111       // Power throttle
-#define brakePedalPin 255     // Brake pedal (optional)
+#define throttlePin 7         // Power throttle
+#define brakePedalPin 8       // Brake pedal (optional)
 #define direcPin 1            // Direction foreward/backward switch
 #define recuPin 2             // Brake energy recuperation on/off switch
 #define handBrakePin 3        // Hand brake state

@@ -77,7 +77,7 @@ void Throttle::update() {
   float torqueReq = Throttle::_translateThrottleToTorque();
   if (_brakePedalFunction && recu) {
     float breakPedReq = - Throttle::_translateBreakPedToTorque();
-    if (breakPedReq > 0) {
+    if (breakPedReq < 0) {
       if (torqueReq > 0) {
         torqueReq = torqueReq - breakPedReq;      // Reduce throttle torque request
       } else {

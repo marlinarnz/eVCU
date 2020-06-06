@@ -28,6 +28,7 @@ class Throttle {
     void reset();
     void begin(int tPin, int bPin=255);
     Throttle(CanManager* canManager);
+    Throttle();
 };
 
 #endif

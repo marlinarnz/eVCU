@@ -12,14 +12,14 @@ extern bool direc;
  * Instantiates the throttle object
  * @param canManager: CanManager class object pointer
  */
-Throttle::Throttle(CanManager* canManager) {
-  byte _throttlePin;
-  byte _brakePedPin;
-  bool _brakePedalFunction = false;
-  float _prevVals[TTSF];
-  Throttle::reset();
-  CanManager* _can = canManager;
-}
+Throttle::Throttle(CanManager* canManager)
+    : _throttlePin(0), _brakePedPin(255), _brakePedalFunction(false),
+    _can(canManager), _prevVals{}
+{}
+Throttle::Throttle()
+    : _throttlePin(0), _brakePedPin(255), _brakePedalFunction(false),
+    _can(NULL), _prevVals{}
+{}
 
 
 /* ============================== Throttle Init ===========================
@@ -40,10 +40,8 @@ void Throttle::begin(int tPin, int bPin) {
   } else if (_brakePedalFunction) {
     report("BRAKE_PEDAL_WRONG_SETTINGS", 3, true);  //TODO
   }
-  // Initialise previous torque request array
-  for(byte i=0; i<TTSF; i++) {
-    _prevVals[i] = 0;
-  }
+  // Reset previous torque request array
+  Throttle::reset();
 }
 
 
@@ -79,7 +77,7 @@ void Throttle::update() {
   float torqueReq = Throttle::_translateThrottleToTorque();
   if (_brakePedalFunction && recu) {
     float breakPedReq = - Throttle::_translateBreakPedToTorque();
-    if (breakPedReq > 0) {
+    if (breakPedReq < 0) {
       if (torqueReq > 0) {
         torqueReq = torqueReq - breakPedReq;      // Reduce throttle torque request
       } else {
@@ -109,7 +107,7 @@ void Throttle::update() {
 
   // Write it down
   _can->writeSignal(VCU1, VCU1_MotorMode_LSB, VCU1_MotorMode_LEN, mode);
-  _can->writeSignal(VCU1, VCU1_MotorMode_LSB, VCU1_MotorMode_LEN, brakePedSts);
+  _can->writeSignal(VCU1, VCU1_BrakePedalSts_LSB, VCU1_BrakePedalSts_LEN, brakePedSts);
   // Write torque request in a range of 0 to 255, which makes the conversion
   // factor obsolete
   _can->writeSignal(VCU1, VCU1_TorqueReq_LSB, VCU1_TorqueReq_LEN, int(min(255, torqueReq)));
