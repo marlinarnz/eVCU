@@ -1,9 +1,9 @@
 /* ============================== test CAN messages ======================= 
- * Tests the OBC messages' validity and prints them out using the VCU's
+ * Tests the MCU messages' validity and prints them out using the VCU's
  * constants and CanMessage class.
  */
 
-#include "TestOBC.h"
+#include "TestMCU.h"
 #include "constants.h"
 #include "CanMessage.h"
 #include <wiringPi.h>		// Library to use C code on the Pi's GPIO pins
@@ -14,15 +14,41 @@ using namespace std;
 
 // Set up the CAN interface
 // https://www.raspberrypi.org/documentation/usage/gpio/
+// https://www.digikey.com/en/maker/blogs/2019/how-to-use-gpio-on-the-raspberry-pi-with-c
 // https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=141052
+// https://crycode.de/can-bus-am-raspberry-pi
 wiringPiSetupGpio();
 MCP_CAN CAN(24);			// Set SPI Chip Select
 
-// Instantiate messages which the OBC reacts to
-CanMessage msgToOBC(BMS1, CAN, BMS1_INTERVAL);
-msgToOBC.writeSignal(BMS1_OBC_ChargeCommand_LSB,
-	BMS1_OBC_ChargeCommand_LEN,
-	BMS1_OBC_ChargeCommand_OFF);
+// Interactive pins
+const int PIN_ON_OFF = 23;
+const int PIN_ACC_CRANK = 18;
+const int PIN_RELAIS_ON_OFF = 16;
+const int PIN_MOTOR_ON_OFF = 17;
+
+// Number of messages to print
+const int N_MSG = 3
+// Message array
+CanMessage msgs{
+	{MCU1, CAN, MCU1_INTERVAL},
+	{MCU2, CAN, MCU2_INTERVAL},
+	{MCU3, CAN, MCU3_INTERVAL}
+};
+
+// Instantiate messages which the MCU reacts to
+CanMessage vcu1(VCU1, CAN, VCU1_INTERVAL);
+vcu1.writeSignal(VCU1_VehicleState_LSB,
+	VCU1_VehicleState_LEN,
+	VCU1_VehicleState_READY);
+vcu1.writeSignal(VCU1_BMS_MainRelayCmd_LSB,
+	VCU1_BMS_MainRelayCmd_LEN,
+	VCU1_BMS_MainRelayCmd_OFF);
+vcu1.writeSignal(VCU1_MotorMode_LSB,
+	VCU1_MotorMode_LEN,
+	VCU1_MotorMode_STANDBY);
+vcu1.writeSignal(VCU1_KeyPosition_LSB,
+	VCU1_KeyPosition_LEN,
+	VCU1_KeyPosition_OFF);
 
 
 // Print a CAN message
@@ -89,8 +115,23 @@ void printMessage(uint32_t id, uint8_t len, uint8_t *frame) {
 	}
 }
 
+// Read a on/off pin
+getSwitchPos(int pin) {
+	int val = digitalRead(pin);
+	if(val<100) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
 
 int main(void) {
+	// Set pins
+	pinMode(PIN_ON_OFF, INPUT);
+	pinMode(PIN_POTI_1, INPUT);
+	pinMode(PIN_POTI_2, INPUT);
+	
 	// Start the CAN bus communication
 	cout<<"Starting the MCP2515"<<endl;
 	while(CAN_OK != CAN.begin(CAN_500KBPS)) {}	// Setting baud rate to 500Kbps
@@ -105,11 +146,28 @@ int main(void) {
 		if(CAN_MSGAVAIL == CAN.checkReceive()) {//check if data coming
 			CAN.readMsgBuf(&len, frame);		// Read data length and buffer
 			id = CAN.getCanId();				// Get message ID
-			printMessage(id, len, frame);
+			
+			// Print if something new appears
+			for(int msg=0; msg<N_MSG; msg++) {
+				if(msgs[msg].getId()==id) {
+					for(int i=0; i<min(len, LSCF); i++) {
+						if(msgs[msg].readByte(i)!=frame[i]) {
+							printMessage(id, len, frame);
+							// Update the msgs array
+							for(int j=0; j<len; j++) {
+								msgs[msg].writeSignal(8*j, 8, frame[j]);
+							}
+						}
+					}
+				}
+			}
 		}
 		
-		// Write and send the BMS signal
-		msgToOBC.send();
+		// Update VCU signal
+		
+		
+		// Write and send the VCU signal
+		vcu1.send();
 	}
 	return 0;
 }

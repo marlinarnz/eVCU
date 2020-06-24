@@ -1,5 +1,5 @@
 /* ============================== References ==============================
- *  This code reads the CAN bus messages from the OBC and checks them.
+ *  This code reads the CAN bus messages from the MCU and checks them.
  *  
  *  License: MIT
  *  
@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef test_VCU_messages_h
-#define test_VCU_messages_h
+#ifndef TestMCU_h
+#define TestMCU_h
 
 void printMessage(uint32_t id, uint8_t len, uint8_t *frame);
 
