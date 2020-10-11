@@ -7,7 +7,7 @@
 #define CanManager_h
 
 #include <Arduino.h>
-#include <mcp_can.h>
+#include <mcp2515.h>
 #include "constants.h"
 #include "CanMessage.h"
 #include "commUtils.h"
@@ -16,11 +16,11 @@
 
 /* ============================== CAN manager class =======================
  * Class which holds the last update for every known CAN signal. Uses a
- * MCP_CAN class v0.1 (written by SeeedStudio on 2012-4-24)
+ * MCP2515 class
  */
 class CanManager {
   private:
-    MCP_CAN* _canObj;
+    MCP2515* _canObj;
   public:
     void update();
     void begin();
@@ -31,7 +31,7 @@ class CanManager {
     CanMessage messagesVCU[N_VCU_MESSAGES];
     CanMessage messagesOther[N_OTHER_MESSAGES];
     CanManager();
-    CanManager(MCP_CAN* canObj);
+    CanManager(MCP2515* canObj);
 };
 
 #endif

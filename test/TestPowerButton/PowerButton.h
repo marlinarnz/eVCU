@@ -28,12 +28,14 @@ class PowerButton {
     unsigned long _lastDebounce;
     void _setLED(byte state);
     void _updateLED();
+    void _checkMCUready();
+    void _checkBMSready();
+    void _checkOBCready();
   public:
     void startMotor();
     void stopMotor();
-    void setMCUready(bool state);
     void update();
-    void begin(byte pin, byte pinLED, bool MCUready);
+    void begin(byte pin, byte pinLED);
     PowerButton(CanManager* can);
     PowerButton();
 };

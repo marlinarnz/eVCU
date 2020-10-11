@@ -1,7 +1,7 @@
 #line 2 "TestCanManager.ino"
 
 #include <AUnitVerbose.h>
-#include <mcp_can.h>
+#include <mcp2515.h>
 #include "CanManager.h"
 #include "commUtils.h"
 #include "constants.h"
@@ -25,7 +25,7 @@ void loop() {
  * begin(), sendMessage(), update(), checkError()
 */
 
-MCP_CAN CAN(10);
+MCP2515 CAN(10);
 
 float readSignalFail = -1;
 

@@ -9,9 +9,9 @@
 /* ============================== CAN constructor =========================
  * The constructor saves the given CAN object and instantiates CAN messages
  * for every known ID as own attributes.
- * @param canObj: MCP_CAN class object pointer
+ * @param canObj: MCP2515 class object pointer
  */
-CanManager::CanManager(MCP_CAN* canObj)
+CanManager::CanManager(MCP2515* canObj)
   : _canObj(canObj),
   messagesVCU{
     {VCU1, _canObj, VCU1_INTERVAL},
@@ -68,13 +68,10 @@ CanManager::CanManager()
  * the result
  */
 void CanManager::begin() {
-  if (CAN_OK != _canObj->begin(CAN_500KBPS)) {
-    _canObj->wake();
-    delay(50);
-    _canObj->begin(CAN_500KBPS);
-    delay(20);
-  }
-  if (CanManager::checkError() == CAN_OK) {
+  _canObj->reset();
+  _canObj->setBitrate(CAN_500KBPS, MCP_8MHZ);
+  _canObj->setNormalMode();
+  if (!CanManager::checkError()) {
     report("CAN_INIT_SUCCESS", 1);  //TODO
   } else {
     report("CAN_BUS_FAULT", 3);  //TODO
@@ -89,7 +86,7 @@ void CanManager::begin() {
  * interval. Default 0 for sending it just once.
  */
 void CanManager::sendMessage(uint32_t id, int interval) {
-  if (CanManager::checkError() == CAN_OK) {
+  if (!CanManager::checkError()) {
     for (uint8_t i=0; i<N_VCU_MESSAGES; i++) {
       if (messagesVCU[i].getId() == id) {
         messagesVCU[i].send(interval);
@@ -106,30 +103,28 @@ void CanManager::sendMessage(uint32_t id, int interval) {
  * signals from other ECUs and sends own messages.
  */
 void CanManager::update() {
-  if (CanManager::checkError() == CAN_OK) {
+  if (!CanManager::checkError()) {
     // Flags for occasional messages
     bool adjustThrottlePos = false;
     bool adjustDriveSettings = false;
 
     // Update info from foreign messages
-    if (CAN_MSGAVAIL == _canObj->checkReceive()) {
-      byte len;
-      byte buf[LSCF];
-      _canObj->readMsgBuf(&len, buf);
-      uint32_t id = _canObj->getCanId();
+    if (_canObj->checkReceive()) {
+      struct can_frame frame;
+      _canObj->readMessage(&frame);
       for (uint8_t i=0; i<N_OTHER_MESSAGES; i++) {
-        if (messagesOther[i].getId() == id) {
+        if (messagesOther[i].getId() == frame.can_id) {
 
           // Update content
-          for (uint8_t j=0; j<min(LSCF, len); j++) {
-            messagesOther[i].writeByte(j, buf[j]);
+          for (uint8_t j=0; j<min(LSCF, frame.can_dlc); j++) {
+            messagesOther[i].writeByte(j, frame.data[j]);
           }
 
           // List of occasional commands to react to
-          if (id == UI_ThrottlePos) {
+          if (frame.can_id == UI_ThrottlePos) {
             adjustThrottlePos = true;
           }
-          else if (id == UI_DriveSettings) {
+          else if (frame.can_id == UI_DriveSettings) {
             adjustDriveSettings = true;
           }
         }

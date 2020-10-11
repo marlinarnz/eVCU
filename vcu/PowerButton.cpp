@@ -32,13 +32,12 @@ PowerButton::PowerButton()
  * @param pinLED: integer light pin (must be analog and support PWM)
  * @param MCUready: boolean MCU is ready to drive or not
  */
-void PowerButton::begin(byte pin, byte pinLED, bool MCUready) {
+void PowerButton::begin(byte pin, byte pinLED) {
   pinMode(pin, INPUT);      // digital pin
   pinMode(pinLED, OUTPUT);  // PWM pin
   _pin = pin;
   _pinLED = pinLED;
-  _MCUready = MCUready;
-  PowerButton::_setLED(0);
+  PowerButton::_setLED(!on);
   PowerButton::_updateLED();
 }
 
@@ -53,21 +52,27 @@ void PowerButton::update() {
     _can->writeSignal(VCU1, VCU1_KeyPosition_LSB, VCU1_KeyPosition_LEN, VCU1_KeyPosition_ON);
     _keyPosCrank = false;
   }
-  if (_MCUready
-      && (digitalRead(_pin) == HIGH)
+  if ((digitalRead(_pin) == HIGH)
       && (millis() - _lastDebounce > PBDD)) {
     _lastDebounce = millis();
     if (!on) {
       PowerButton::_setLED(0);
       PowerButton::_updateLED();
       PowerButton::startMotor();
-      report("STARTED_MOTOR", 1); // TODO
     } else {
       PowerButton::_setLED(0);
       PowerButton::_updateLED();
       PowerButton::stopMotor();
-      report("STOPPED_MOTOR", 1); // TODO
     }
+  }
+  if (!_MCUready) {
+    PowerButton::_checkMCUready();
+  }
+  if (!_BMSready) {
+    PowerButton::_checkBMSready();
+  }
+  if (_OBCready) {
+    PowerButton::_checkOBCready();
   }
   PowerButton::_updateLED();
 }
@@ -77,44 +82,12 @@ void PowerButton::update() {
  * Requests to start and stop the motor via the MCU
  */
 void PowerButton::startMotor() {
-  // Check MCU
-  if (!_MCUready
-      || _can->readSignal(MCU2, MCU2_WarningLevel_LSB, MCU2_WarningLevel_LEN) >= MCU2_WarningLevel_ERROR3
-      || _can->readSignal(MCU2, MCU2_MotorSystemState_LSB, MCU2_MotorSystemState_LEN) == MCU2_MotorSystemState_ERROR
-      || _can->checkError() != CAN_OK) {
-    _MCUready = false;
-    report("MOTOR_START_FAIL_DUE_MCU", 2); // TODO
-  } else {
-    _MCUready = true;
-  }
-  
-  // Check OBC
-  if (_can->readSignal(OBC1, OBC1_BatteryConnectStatus_LSB, OBC1_BatteryConnectStatus_LEN) == OBC1_BatteryConnectStatus_DISCONNECTED
-      && int(_can->readSignal(OBC2, OBC2_ACVoltageInput_LSB, OBC2_ACVoltageInput_LEN, OBC2_ACVoltageInput_CONV_D)) == 0
-      && _can->readSignal(OBC2, OBC2_SystemStatus_LSB, OBC2_SystemStatus_LEN) != OBC2_SystemStatus_CHARGE_CC
-      && _can->readSignal(OBC2, OBC2_SystemStatus_LSB, OBC2_SystemStatus_LEN) != OBC2_SystemStatus_CHARGE_CV
-      && int(_can->readSignal(OBC3, OBC3_ACCurrentInput_LSB, OBC3_ACCurrentInput_LEN, OBC3_ACCurrentInput_CONV_D)) == 0
-      && _can->readSignal(OBC3, OBC3_OutRelayStatus_LSB, OBC3_OutRelayStatus_LSB) == OBC3_OutRelayStatus_DISCONNECTED
-      && _can->readSignal(OBC3, OBC3_CCStatus_LSB, OBC3_CCStatus_LEN) == OBC3_CCStatus_DISCONNECTED
-      && _can->checkError() == CAN_OK) {
-    _OBCready = true;
-  } else {
-    _OBCready = false;
-    report("MOTOR_START_FAIL_DUE_OBC", 2); // TODO
-  }
-  
-  // Check BMS
-  if (_can->checkError() != CAN_OK) {
-    
-    //TODO
+  // Check devices
+  PowerButton::_checkMCUready();
+  PowerButton::_checkBMSready();
+  PowerButton::_checkOBCready();
 
-    _BMSready = false;
-    report("MOTOR_START_FAIL_DUE_BMS", 2); // TODO
-  } else {
-    _BMSready = true;
-  }
-
-  if (_MCUready && _BMSready && _OBCready) {
+  if (_MCUready && _BMSready && !_OBCready) {
     digitalWrite(mainContactorPin, HIGH);
     digitalWrite(prechargeRelaisPin, LOW);
     _can->writeSignal(VCU1, VCU1_BMS_MainRelayCmd_LSB, VCU1_BMS_MainRelayCmd_LEN, VCU1_BMS_MainRelayCmd_ON);
@@ -124,6 +97,9 @@ void PowerButton::startMotor() {
     _can->writeSignal(VCU1, VCU1_MotorMode_LSB, VCU1_MotorMode_LEN, VCU1_MotorMode_POWERDRIVE);
     _keyPosCrank = true;
     PowerButton::_setLED(2);
+    report("STARTED_MOTOR", 1); // TODO
+  } else {
+    report("MOTOR_START_FAULT", 3); //TODO
   }
 }
 
@@ -131,17 +107,45 @@ void PowerButton::stopMotor() {
   _can->writeSignal(VCU1, VCU1_MotorMode_LSB, VCU1_MotorMode_LEN, VCU1_MotorMode_STANDBY);
   _can->writeSignal(VCU1, VCU1_KeyPosition_LSB, VCU1_KeyPosition_LEN, VCU1_KeyPosition_ACC);
   PowerButton::_setLED(1);
+  report("STOPPED_MOTOR", 1); // TODO
+  // Check devices
+  PowerButton::_checkMCUready();
+  PowerButton::_checkBMSready();
+  PowerButton::_checkOBCready();
 }
 
 
 /* ============================== State of MCU ============================
- * Sets state of the MCU for PowerButton functionality
- * @param state: boolean if MCU is ready or not
+ * Checks state of the MCU for PowerButton functionality and saves it
  */
-void PowerButton::setMCUready(bool state) {
-  _MCUready = state;
-  if (!state) {
+void PowerButton::_checkMCUready() {
+  _MCUready = _can->checkMCUready(true);
+  if (!_MCUready) {
     PowerButton::_setLED(3);
+  }
+}
+
+
+/* ============================== State of BMS ============================
+ * Checks state of the BMS for PowerButton functionality and saves it
+ */
+void PowerButton::_checkBMSready() {
+  _BMSready = _can->checkBMSready(true);
+  if (!_BMSready) {
+    PowerButton::_setLED(3);
+  }
+}
+
+
+/* ============================== State of OBC ============================
+ * Checks state of the OBC for PowerButton functionality and saves it
+ * NOTE: The car should not start when the OBC is working
+ */
+void PowerButton::_checkOBCready() {
+  _OBCready = (_can->readSignal(OBC1, OBC1_StartStatus_LSB, OBC1_StartStatus_LEN) == OBC1_StartStatus_ON)
+              && (_can->checkError() == CAN_OK);
+  if (_OBCready) {
+    PowerButton::_setLED(0);
   }
 }
 

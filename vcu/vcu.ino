@@ -34,7 +34,7 @@
 
 /* ============================== Libraries =============================== */
 #include <SPI.h>              // Communication via SPI
-#include <mcp_can.h>          // Lib for MCP2515 CAN communication
+#include <mcp2515.h>          // Lib for MCP2515 CAN communication
 #include <EEPROM.h>           // EEPROM storage access
 #include "PowerButton.h"      // Class of the start/stop button
 #include "constants.h"        // Values for car operation
@@ -56,7 +56,7 @@ unsigned long prechargeStart;
 unsigned long lastLoop;
 
 // Instantiate an MCP2515 driver and give it to the CAN bus manager
-MCP_CAN CAN(selectCANPin);    // Set SPI Chip Select
+MCP2515 CAN(selectCANPin);    // Set SPI Chip Select
 CanManager can(&CAN);
 
 // Instantiate a throttle object
@@ -68,6 +68,8 @@ PowerButton powerButton(&can);
 
 /* ============================== Setup =================================== */
 void setup() {
+  Serial.begin(9600);
+  
   pinMode(direcPin, INPUT);
   pinMode(recuPin, INPUT);
   pinMode(handBrakePin, INPUT);
@@ -84,14 +86,14 @@ void setup() {
   pinMode(powerButtonLEDPin, OUTPUT);
   digitalWrite(powerButtonLEDPin, LOW);  // PowerButton light off
 
-  resetEEPROM();              // update EEPROM values to default (see constants)
+  //resetEEPROM();              // update EEPROM values to default (see constants)
 
   can.begin();                // Start the CAN bus communication
 
   throttle.begin(throttlePin, brakePedalPin);
 
-  bool MCUready = initMCU(false); // Initialise the MCU and with it the PowerButton
-  powerButton.begin(powerButtonPin, powerButtonLEDPin, MCUready);
+  initMCU(PRCH);              // Initialise the MCU
+  powerButton.begin(powerButtonPin, powerButtonLEDPin); // Init PowerButton
   
   startTime = millis();       // Save setup finish time
 }
@@ -99,9 +101,11 @@ void setup() {
 /* ============================== Main loop  ============================== */
 void loop() {
   can.update();               // Read news, spread news, save news
-  bool running = checkMotorState();
+  bool running = getMotorState() == MCU1_MotorMainState_RUNNING;
   if (running && !on) {
     throttle.reset();         // Reset the throttle if motor gets started
+  } else if (!running && on) {
+    powerButton.stopMotor();  // Update power button if motor stopped itself
   }
   on = running;               // Read the motor status
   powerButton.update();       // Read if start/stop button was pressed
@@ -122,9 +126,8 @@ void loop() {
  * Starts the motor controller and checks its state for faults
  * @param precharge: boolean whether to open the precharge relais or the
  *                   main contactor
- * @return: boolean initialisation success or fail
  */
-bool initMCU(bool precharge) {
+void initMCU(bool precharge) {
   digitalWrite(kl15Pin, HIGH);
   can.writeSignal(VCU1, VCU1_KeyPosition_LSB, VCU1_KeyPosition_LEN, VCU1_KeyPosition_ACC);
   if (precharge) {
@@ -137,31 +140,23 @@ bool initMCU(bool precharge) {
   }
 
   bool MCUready = false;
-  long startTime = millis();
+  long endTime = millis() + MITL;
 
   //TODO check MITL too short or too long
   
-  while(!MCUready && (millis() - startTime) < MITL) {
-    MCUready = listenMCUready();
+  while(!MCUready && millis() < endTime) {
+    int state = getMotorState();
+    MCUready = can.checkMCUready(true)
+               && (state == MCU1_MotorMainState_STANDBY
+                  || state == MCU1_MotorMainState_PRECHARGE
+                  || state == MCU1_MotorMainState_READY);
     delay(10);
   }
   if (MCUready) {
     report("CONTROLLER_INIT_SUCCESS", 1); //TODO
-    return true;
   } else {
     report("CONTROLLER_INIT_FAULT", 3); //TODO
-    return false;
   }
-}
-
-bool listenMCUready() {
-  byte state = can.readSignal(MCU1, MCU1_MotorMainState_LSB, MCU1_MotorMainState_LEN);
-  return (can.readSignal(MCU2, MCU2_MotorSystemState_LSB, MCU2_MotorSystemState_LEN) != MCU2_MotorSystemState_ERROR
-          && can.readSignal(MCU2, MCU2_WarningLevel_LSB, MCU2_WarningLevel_LEN) < MCU2_WarningLevel_ERROR3
-          && (state == MCU1_MotorMainState_STANDBY
-              || state == MCU1_MotorMainState_PRECHARGE
-              || state == MCU1_MotorMainState_READY)
-          && can.checkError() == CAN_OK);
 }
 
 
@@ -180,30 +175,16 @@ void updateWarnSignals() {
   }
   
   // Read CAN signals and check for errors or warnings from other ECUs
-  // Fatal errors: Need a reset to eventually start the car again
+  // Fatal errors: Require a reset to eventually start the car again
   if (false) {
     digitalWrite(mainContactorPin, LOW);
     powerButton.stopMotor();
-    powerButton.setMCUready(false);
     setWarningLevel(3);
     can.writeSignal(VCU2, VCU2_UrgencyCutOffPowerReq_LSB, VCU2_UrgencyCutOffPowerReq_LEN, VCU2_UrgencyCutOffPowerReq_ERROR);
   }
   // Motor/MCU errors
-  if (can.readSignal(MCU2, MCU2_DC_MainWireOverCurrFault_LSB, MCU2_DC_MainWireOverCurrFault_LEN) == MCU2_DC_MainWireOverCurrFault_ERROR
-      || can.readSignal(MCU2, MCU2_MotorPhaseCurrFault_LSB, MCU2_MotorPhaseCurrFault_LEN) == MCU2_MotorPhaseCurrFault_ERROR
-      || can.readSignal(MCU2, MCU2_OverHotFault_LSB, MCU2_OverHotFault_LEN) == MCU2_OverHotFault_ERROR
-      || can.readSignal(MCU2, MCU2_RotateTransformerFault_LSB, MCU2_RotateTransformerFault_LEN) == MCU2_RotateTransformerFault_ERROR
-      || can.readSignal(MCU2, MCU2_MotorOverSpdFault_LSB, MCU2_MotorOverSpdFault_LEN) == MCU2_MotorOverSpdFault_ERROR
-      || can.readSignal(MCU2, MCU2_DrvMotorOverHotFault_LSB, MCU2_DrvMotorOverHotFault_LEN) == MCU2_DrvMotorOverHotFault_ERROR
-      || can.readSignal(MCU2, MCU2_DC_MainWireOverVoltFault_LSB, MCU2_DC_MainWireOverVoltFault_LEN) == MCU2_DC_MainWireOverVoltFault_ERROR
-      || can.readSignal(MCU2, MCU2_DrvMotorOverCoolFault_LSB, MCU2_DrvMotorOverCoolFault_LEN) == MCU2_DrvMotorOverCoolFault_ERROR
-      || can.readSignal(MCU2, MCU2_MotorSystemState_LSB, MCU2_MotorSystemState_LEN) == MCU2_MotorSystemState_ERROR
-      || can.readSignal(MCU2, MCU2_MotorOpenPhaseFault_LSB, MCU2_MotorOpenPhaseFault_LEN) == MCU2_MotorOpenPhaseFault_ERROR
-      ) {
+  if (!can.checkMCUready() || !can.checkBMSready()) {
     powerButton.stopMotor();
-    powerButton.setMCUready(false);
-  } else {
-    powerButton.setMCUready(true);
   }
   // Motor/MCU warnings
   if (can.readSignal(MCU1, MCU1_ActMotorSpd_LSB, MCU1_ActMotorSpd_LEN) == MCU1_ActMotorSpd_INVALID
@@ -226,6 +207,9 @@ void updateWarnSignals() {
       || can.readSignal(MCU3, MCU3_DC_MainWireCurr_LSB, MCU3_DC_MainWireCurr_LEN) == MCU3_DC_MainWireCurr_INVALID
       || can.readSignal(MCU3, MCU3_MotorPhaseCurr_LSB, MCU3_MotorPhaseCurr_LEN) == MCU3_MotorPhaseCurr_INVALID
       ) {
+    
+    //TODO: Add BMS warnings in the if condition
+    
     digitalWrite(engineFaultLightPin, HIGH);
   } else {
     digitalWrite(engineFaultLightPin, LOW);
@@ -255,20 +239,20 @@ void updateGauges() {
 
 
 /* ============================== MCU status ==============================
- * Returns true or false when motor is running or not
- * @return: bool true if motor is running, false otherwise
+ * Returns the motor state
+ * @return: int motor state (see constants)
  */
-bool checkMotorState() {
+int getMotorState() {
   
   //TODO what does MotorState/MotorMainState_STANDBY and READY mean?
 
-  bool running = (can.readSignal(MCU1, MCU1_MotorMainState_LSB, MCU1_MotorMainState_LEN) == MCU1_MotorMainState_RUNNING);
-  if (running
+  int state = int(can.readSignal(MCU1, MCU1_MotorMainState_LSB, MCU1_MotorMainState_LEN));
+  if (state == MCU1_MotorMainState_RUNNING
       && ((can.readSignal(MCU1, MCU1_MotorRatoteDirection_LSB, MCU1_MotorRatoteDirection_LEN) == MCU1_MotorRatoteDirection_FORWARD && !direc)
           || (can.readSignal(MCU1, MCU1_MotorRatoteDirection_LSB, MCU1_MotorRatoteDirection_LEN) == MCU1_MotorRatoteDirection_BACKWARD && direc))) {
     report("MOTOR_WRONG_DIRECTION", 3);
   }
-  return running;
+  return state;
 }
 
 

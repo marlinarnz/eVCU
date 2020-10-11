@@ -13,8 +13,8 @@ CanManager::CanManager() {
 
 float CanManager::readSignal(long id, int lsb, int len, float conv, int offset) {
   float val = 0;
-  if (id==OBC1 && lsb==OBC1_BatteryConnectStatus_LSB && len==OBC1_BatteryConnectStatus_LEN) {
-    val = 1;
+  if (id==OBC1 && lsb==OBC1_StartStatus_LSB && len==OBC1_StartStatus_LEN) {
+    val = OBC1_StartStatus_OFF;
   }
   return val;
 }
@@ -31,5 +31,13 @@ void CanManager::writeSignal(long id, int lsb, int len, int val, float conv, int
 }
 
 bool CanManager::checkError() {
-  return returnCheckError;
+  return returnCheckError == CAN_OK;
+}
+
+bool CanManager::checkMCUready(bool quick) {
+  return returnCheckError == CAN_OK;
+}
+
+bool CanManager::checkBMSready(bool quick) {
+  return returnCheckError == CAN_OK;
 }

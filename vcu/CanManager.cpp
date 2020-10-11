@@ -9,9 +9,9 @@
 /* ============================== CAN constructor =========================
  * The constructor saves the given CAN object and instantiates CAN messages
  * for every known ID as own attributes.
- * @param canObj: MCP_CAN class object pointer
+ * @param canObj: MCP2515 class object pointer
  */
-CanManager::CanManager(MCP_CAN* canObj)
+CanManager::CanManager(MCP2515* canObj)
   : _canObj(canObj),
   messagesVCU{
     {VCU1, _canObj, VCU1_INTERVAL},
@@ -68,12 +68,9 @@ CanManager::CanManager()
  * the result
  */
 void CanManager::begin() {
-  if (CAN_OK != _canObj->begin(CAN_500KBPS)) {
-    _canObj->wake();
-    delay(50);
-    _canObj->begin(CAN_500KBPS);
-    delay(20);
-  }
+  _canObj->reset();
+  _canObj->setBitrate(CAN_500KBPS, MCP_8MHZ);
+  _canObj->setNormalMode();
   if (CanManager::checkError() == CAN_OK) {
     report("CAN_INIT_SUCCESS", 1);  //TODO
   } else {
@@ -96,6 +93,7 @@ void CanManager::sendMessage(uint32_t id, int interval) {
       }
     }
   } else {
+    report("CAN_BUS_FAULT", 3); //TODO
     CanManager::begin();
   }
 }
@@ -112,24 +110,22 @@ void CanManager::update() {
     bool adjustDriveSettings = false;
 
     // Update info from foreign messages
-    if (CAN_MSGAVAIL == _canObj->checkReceive()) {
-      byte len;
-      byte buf[LSCF];
-      _canObj->readMsgBuf(&len, buf);
-      uint32_t id = _canObj->getCanId();
+    if (_canObj->checkReceive()) {
+      struct can_frame frame;
+      _canObj->readMessage(&frame);
       for (uint8_t i=0; i<N_OTHER_MESSAGES; i++) {
-        if (messagesOther[i].getId() == id) {
+        if (messagesOther[i].getId() == frame.can_id) {
 
           // Update content
-          for (uint8_t j=0; j<min(LSCF, len); j++) {
-            messagesOther[i].writeByte(j, buf[j]);
+          for (uint8_t j=0; j<min(LSCF, frame.can_dlc); j++) {
+            messagesOther[i].writeByte(j, frame.data[j]);
           }
 
           // List of occasional commands to react to
-          if (id == UI_ThrottlePos) {
+          if (frame.can_id == UI_ThrottlePos) {
             adjustThrottlePos = true;
           }
-          else if (id == UI_DriveSettings) {
+          else if (frame.can_id == UI_DriveSettings) {
             adjustDriveSettings = true;
           }
         }
@@ -185,6 +181,7 @@ void CanManager::update() {
     }
     
   } else {
+    report("CAN_BUS_FAULT", 3); //TODO
     CanManager::begin();
   }
 }
@@ -195,7 +192,50 @@ void CanManager::update() {
  * @return: integer error code. CAN_OK in case all is good
  */
 int CanManager::checkError() {
-  return _canObj->checkError();
+  //return _canObj->checkError();
+  uint8_t er = _canObj->checkError();
+  report(String(er), 1);
+  return er;
+}
+
+
+/* ============================== Check MCU state =========================
+ * Checks whether the MCU is ready
+ * @param quick: bool if quick check or thorough
+ * @return: bool if device is ready or not
+ */
+bool CanManager::checkMCUready(bool quick) {
+  return CanManager::checkError() == CAN_OK
+         && CanManager::readSignal(MCU2, MCU2_WarningLevel_LSB, MCU2_WarningLevel_LEN) <= MCU2_WarningLevel_ERROR1
+         && CanManager::readSignal(MCU2, MCU2_MotorSystemState_LSB, MCU2_MotorSystemState_LEN) == MCU2_MotorSystemState_OK
+         && quick ? true :
+         ! (CanManager::readSignal(MCU2, MCU2_DC_MainWireOverCurrFault_LSB, MCU2_DC_MainWireOverCurrFault_LEN) == MCU2_DC_MainWireOverCurrFault_ERROR
+         || CanManager::readSignal(MCU2, MCU2_MotorPhaseCurrFault_LSB, MCU2_MotorPhaseCurrFault_LEN) == MCU2_MotorPhaseCurrFault_ERROR
+         || CanManager::readSignal(MCU2, MCU2_OverHotFault_LSB, MCU2_OverHotFault_LEN) == MCU2_OverHotFault_ERROR
+         || CanManager::readSignal(MCU2, MCU2_RotateTransformerFault_LSB, MCU2_RotateTransformerFault_LEN) == MCU2_RotateTransformerFault_ERROR
+         || CanManager::readSignal(MCU2, MCU2_MotorOverSpdFault_LSB, MCU2_MotorOverSpdFault_LEN) == MCU2_MotorOverSpdFault_ERROR
+         || CanManager::readSignal(MCU2, MCU2_DrvMotorOverHotFault_LSB, MCU2_DrvMotorOverHotFault_LEN) == MCU2_DrvMotorOverHotFault_ERROR
+         || CanManager::readSignal(MCU2, MCU2_DC_MainWireOverVoltFault_LSB, MCU2_DC_MainWireOverVoltFault_LEN) == MCU2_DC_MainWireOverVoltFault_ERROR
+         || CanManager::readSignal(MCU2, MCU2_DrvMotorOverCoolFault_LSB, MCU2_DrvMotorOverCoolFault_LEN) == MCU2_DrvMotorOverCoolFault_ERROR
+         || CanManager::readSignal(MCU2, MCU2_MotorOpenPhaseFault_LSB, MCU2_MotorOpenPhaseFault_LEN) == MCU2_MotorOpenPhaseFault_ERROR);
+}
+
+
+/* ============================== Check BMS state =========================
+ * Checks whether the BMS is ready
+ * @param quick: bool if quick check or thorough
+ * @return: bool if device is ready or not
+ */
+
+//TODO
+
+bool CanManager::checkBMSready(bool quick) {
+  return CanManager::checkError() == CAN_OK;
+         //&& CanManager::readSignal(MCU2, MCU2_WarningLevel_LSB, MCU2_WarningLevel_LEN) <= MCU2_WarningLevel_ERROR1
+         //&& CanManager::readSignal(MCU2, MCU2_MotorSystemState_LSB, MCU2_MotorSystemState_LEN) == MCU2_MotorSystemState_OK
+         //&& quick ? true :
+         //! (CanManager::readSignal(MCU2, MCU2_DC_MainWireOverCurrFault_LSB, MCU2_DC_MainWireOverCurrFault_LEN) == MCU2_DC_MainWireOverCurrFault_ERROR
+         //|| CanManager::readSignal(MCU2, MCU2_MotorOpenPhaseFault_LSB, MCU2_MotorOpenPhaseFault_LEN) == MCU2_MotorOpenPhaseFault_ERROR);
 }
 
 
@@ -218,7 +258,7 @@ float CanManager::readSignal(uint32_t id, int lsb, int len, float conv, int offs
         sig = messagesOther[i].readSignalBE(lsb, len, conv, offset);
       }
       if (sig == -1) {
-        report("CAN_SIGNAL_WRONG_LSB_LEN", 2);
+        report("CAN_SIGNAL_ERROR", 2);
       }
       return sig;
     }

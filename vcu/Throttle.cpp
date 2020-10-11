@@ -38,7 +38,7 @@ void Throttle::begin(int tPin, int bPin) {
       report("BRAKE_PEDAL_WRONG_SETTINGS", 1);  //TODO
     }
   } else if (_brakePedalFunction) {
-    report("BRAKE_PEDAL_WRONG_SETTINGS", 3, true);  //TODO
+    report("BRAKE_PEDAL_CRITICAL_SETTINGS", 3, true);  //TODO
   }
   // Reset previous torque request array
   Throttle::reset();

@@ -11,10 +11,10 @@
  * well as the content array with a default of LSCF bytes, 8 bits each. The
  * MCP_CAN object enables sending the message.
  * @param ident: long ID of that message
- * @param canObj: MCP_CAN class object pointer
+ * @param canObj: MCP2515 class object pointer
  * @param interv: integer interval for periodic sending in millis. 0 for none
  */
-CanMessage::CanMessage(uint32_t ident, MCP_CAN* canObj, int interv)
+CanMessage::CanMessage(uint32_t ident, MCP2515* canObj, int interv)
   : _id(ident), _canObj(canObj), _interval(interv), _lastSent(0), _frame{} {
   CanMessage::setFrameBytes(0);
 }
@@ -53,13 +53,20 @@ void CanMessage::send(int interv) {
     _interval = interv;
   }
   if ((_interval > 0 && millis() - _lastSent > _interval) || _interval == 0) {
-    uint8_t extended = 0;
-    if (_id > 2047) {
-      extended = 1;
+    struct can_frame frame;
+    frame.can_id = getId();
+    frame.can_dlc = LSCF;
+    for (uint8_t i=0; i<LSCF; i++) {
+      frame.data[i] = _frame[i];
     }
-    _canObj->sendMsgBuf(_id, extended, LSCF, _frame);
+    if (_id > 2047) {
+      // Extended ID
+      _canObj->sendMessage(MCP2515::TXB1, &frame);
+    } else {
+      _canObj->sendMessage(&frame);
+    }
+    _lastSent = millis();
   }
-  _lastSent = millis();
 }
 
 

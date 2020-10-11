@@ -9,18 +9,20 @@
 /* ============================== Message constructor =====================
  * The constructor saves the necessary attributes ID and send interval as
  * well as the content array with a default of LSCF bytes, 8 bits each. The
- * MCP_CAN object enables sending the message.
+ * MCP2515 object enables sending the message.
  * @param ident: long ID of that message
- * @param canObj: MCP_CAN class object pointer
+ * @param canObj: MCP2515 class object pointer
  * @param interv: integer interval for periodic sending in millis. 0 for none
  */
-CanMessage::CanMessage(uint32_t ident, MCP_CAN* canObj, int interv)
-  : _id(ident), _canObj(canObj), _interval(interv), _lastSent(0), _frame{} {
+CanMessage::CanMessage(uint32_t ident, MCP2515* canObj, int interv)
+  : _id(ident), _canObj(canObj), _interval(interv), _lastSent(- interv),
+  _lastUpdate(- interv * CMIF), _frame{} {
   CanMessage::setFrameBytes(0);
 }
 // Default constructor to enable arrays
 CanMessage::CanMessage()
-  : _id(0), _canObj(NULL), _interval(0), _lastSent(0), _frame{} {}
+  : _id(0), _canObj(NULL), _interval(0), _lastSent(0), _lastUpdate(0),
+  _frame{} {}
 
 
 /* ============================== Return ID ===============================
@@ -53,13 +55,20 @@ void CanMessage::send(int interv) {
     _interval = interv;
   }
   if ((_interval > 0 && millis() - _lastSent > _interval) || _interval == 0) {
-    uint8_t extended = 0;
-    if (_id > 2047) {
-      extended = 1;
+    struct can_frame frame;
+    frame.can_id = getId();
+    frame.can_dlc = LSCF;
+    for (uint8_t i=0; i<LSCF; i++) {
+      frame.data[i] = _frame[i];
     }
-    _canObj->sendMsgBuf(_id, extended, LSCF, _frame);
+    if (_id > 2047) {
+      // Extended ID
+      _canObj->sendMessage(MCP2515::TXB1, &frame);
+    } else {
+      _canObj->sendMessage(&frame);
+    }
+    _lastSent = millis();
   }
-  _lastSent = millis();
 }
 
 
@@ -72,7 +81,8 @@ void CanMessage::send(int interv) {
  * @return: float signal content, already converted. -1 as error code
  */
 float CanMessage::readByte(int b, float conv, int offset) {
-  if (CanMessage::_checkLSBandLen(b * 8, 8)) {
+  if (CanMessage::_checkLSBandLen(b * 8, 8) &&
+      CanMessage::_checkUpdated()) {
     return _frame[b] * conv - offset;
   }
   // Return error code otherwise  
@@ -92,6 +102,7 @@ void CanMessage::writeByte(int b, long val, float conv, int offset) {
   if (conv > 0 && offset >= 0
       && CanMessage::_checkLSBandLen(b * 8, 8)) {
     _frame[b] = (uint8_t)(val / conv + offset);
+    _lastUpdate = millis();
   }
 }
 
@@ -109,7 +120,8 @@ void CanMessage::writeByte(int b, long val, float conv, int offset) {
  * TODO: Properly return four byte signals with odd lsb
  */
 float CanMessage::readSignalLE(int lsb, int len, float conv, int offset) {
-  if (CanMessage::_checkLSBandLen(lsb, len)) {
+  if (CanMessage::_checkLSBandLen(lsb, len) &&
+      CanMessage::_checkUpdated()) {
     uint32_t sig = 0;
     uint8_t lastByte = CanMessage::_getLastByte(lsb, len);
     uint8_t firstByte = int(lsb / 8);
@@ -146,7 +158,8 @@ float CanMessage::readSignalLE(int lsb, int len, float conv, int offset) {
 
 // Big endian
 float CanMessage::readSignalBE(int lsb, int len, float conv, int offset) {
-  if (CanMessage::_checkLSBandLen(lsb, len)) {
+  if (CanMessage::_checkLSBandLen(lsb, len) &&
+      CanMessage::_checkUpdated()) {
     uint32_t sig = 0;
     uint8_t lastByte = CanMessage::_getLastByte(lsb, len);
     uint8_t firstByte = int(lsb / 8);
@@ -224,6 +237,7 @@ void CanMessage::writeSignal(int lsb, int len, long val, float conv, int offset)
       _frame[lastByte] = (_frame[lastByte] & (0xFF >> (8 - leftFilled)))
                          | oldLeft;
     }
+  _lastUpdate = millis();
   }
 }
 
@@ -238,6 +252,16 @@ void CanMessage::writeSignal(int lsb, int len, long val, float conv, int offset)
 bool CanMessage::_checkLSBandLen(int lsb, int len) {
   return len > 0 && lsb < LSCF * 8 && lsb >= 0 && len <= sizeof(long) * 8
     && ((len <= lsb + 8 && lsb >= 8) || lsb + len <= 8);
+}
+
+
+/* ============================== Check updated ===========================
+ * Checks whether the message content has been updated or the device
+ * sending it is offline.
+ * @return: boolean whether message is up to date
+ */
+bool CanMessage::_checkUpdated() {
+  return millis() - _lastUpdate < CMIF * _interval;
 }
 
 

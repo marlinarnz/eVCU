@@ -8,7 +8,7 @@
 #define CanMessage_h
 
 #include <Arduino.h>
-#include <mcp_can.h>
+#include <mcp2515.h>
 #include "constants.h"
 
 
@@ -18,7 +18,7 @@
  */
 class CanMessage {
   private:
-    MCP_CAN* _canObj;
+    MCP2515* _canObj;
     uint8_t _frame[LSCF];
     uint32_t _id;
     int _interval;
@@ -35,7 +35,7 @@ class CanMessage {
     void writeSignal(int lsb, int len, long val, float conv=1, int offset=0);
     void writeByte(int b, long val, float conv=1, int offset=0);
     CanMessage();
-    CanMessage(uint32_t ident, MCP_CAN* canObj, int interv);
+    CanMessage(uint32_t ident, MCP2515* canObj, int interv);
 };
 
 #endif
