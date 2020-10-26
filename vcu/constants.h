@@ -36,7 +36,7 @@
  */
 const uint8_t CMIF = 5;       // CAN message inactivity factor: Numer of
                               // message intervals without update until
-                              // the message object reports an error code
+                              // the message becomes erroneous
 const uint8_t LSCF = 8;       // Length of standard CAN frame
 const uint8_t PRCH = 0;       // Bool if there is a precharge installation
 const uint16_t PCDL = 1500;   // Precharge delay: time to delay the motor start

@@ -192,10 +192,7 @@ void CanManager::update() {
  * @return: integer error code. CAN_OK in case all is good
  */
 int CanManager::checkError() {
-  //return _canObj->checkError();
-  uint8_t er = _canObj->checkError();
-  report(String(er), 1);
-  return er;
+  return _canObj->checkError();
 }
 
 
@@ -205,19 +202,24 @@ int CanManager::checkError() {
  * @return: bool if device is ready or not
  */
 bool CanManager::checkMCUready(bool quick) {
-  return CanManager::checkError() == CAN_OK
-         && CanManager::readSignal(MCU2, MCU2_WarningLevel_LSB, MCU2_WarningLevel_LEN) <= MCU2_WarningLevel_ERROR1
-         && CanManager::readSignal(MCU2, MCU2_MotorSystemState_LSB, MCU2_MotorSystemState_LEN) == MCU2_MotorSystemState_OK
-         && quick ? true :
-         ! (CanManager::readSignal(MCU2, MCU2_DC_MainWireOverCurrFault_LSB, MCU2_DC_MainWireOverCurrFault_LEN) == MCU2_DC_MainWireOverCurrFault_ERROR
-         || CanManager::readSignal(MCU2, MCU2_MotorPhaseCurrFault_LSB, MCU2_MotorPhaseCurrFault_LEN) == MCU2_MotorPhaseCurrFault_ERROR
-         || CanManager::readSignal(MCU2, MCU2_OverHotFault_LSB, MCU2_OverHotFault_LEN) == MCU2_OverHotFault_ERROR
-         || CanManager::readSignal(MCU2, MCU2_RotateTransformerFault_LSB, MCU2_RotateTransformerFault_LEN) == MCU2_RotateTransformerFault_ERROR
-         || CanManager::readSignal(MCU2, MCU2_MotorOverSpdFault_LSB, MCU2_MotorOverSpdFault_LEN) == MCU2_MotorOverSpdFault_ERROR
-         || CanManager::readSignal(MCU2, MCU2_DrvMotorOverHotFault_LSB, MCU2_DrvMotorOverHotFault_LEN) == MCU2_DrvMotorOverHotFault_ERROR
-         || CanManager::readSignal(MCU2, MCU2_DC_MainWireOverVoltFault_LSB, MCU2_DC_MainWireOverVoltFault_LEN) == MCU2_DC_MainWireOverVoltFault_ERROR
-         || CanManager::readSignal(MCU2, MCU2_DrvMotorOverCoolFault_LSB, MCU2_DrvMotorOverCoolFault_LEN) == MCU2_DrvMotorOverCoolFault_ERROR
-         || CanManager::readSignal(MCU2, MCU2_MotorOpenPhaseFault_LSB, MCU2_MotorOpenPhaseFault_LEN) == MCU2_MotorOpenPhaseFault_ERROR);
+  if (CanManager::checkError() == CAN_OK
+    && CanManager::readSignal(MCU2, MCU2_WarningLevel_LSB, MCU2_WarningLevel_LEN) <= MCU2_WarningLevel_ERROR1
+    && CanManager::readSignal(MCU2, MCU2_MotorSystemState_LSB, MCU2_MotorSystemState_LEN) == MCU2_MotorSystemState_OK) {
+    if (!quick && 
+      (CanManager::readSignal(MCU2, MCU2_DC_MainWireOverCurrFault_LSB, MCU2_DC_MainWireOverCurrFault_LEN) == MCU2_DC_MainWireOverCurrFault_ERROR
+      || CanManager::readSignal(MCU2, MCU2_MotorPhaseCurrFault_LSB, MCU2_MotorPhaseCurrFault_LEN) == MCU2_MotorPhaseCurrFault_ERROR
+      || CanManager::readSignal(MCU2, MCU2_OverHotFault_LSB, MCU2_OverHotFault_LEN) == MCU2_OverHotFault_ERROR
+      || CanManager::readSignal(MCU2, MCU2_RotateTransformerFault_LSB, MCU2_RotateTransformerFault_LEN) == MCU2_RotateTransformerFault_ERROR
+      || CanManager::readSignal(MCU2, MCU2_MotorOverSpdFault_LSB, MCU2_MotorOverSpdFault_LEN) == MCU2_MotorOverSpdFault_ERROR
+      || CanManager::readSignal(MCU2, MCU2_DrvMotorOverHotFault_LSB, MCU2_DrvMotorOverHotFault_LEN) == MCU2_DrvMotorOverHotFault_ERROR
+      || CanManager::readSignal(MCU2, MCU2_DC_MainWireOverVoltFault_LSB, MCU2_DC_MainWireOverVoltFault_LEN) == MCU2_DC_MainWireOverVoltFault_ERROR
+      || CanManager::readSignal(MCU2, MCU2_DrvMotorOverCoolFault_LSB, MCU2_DrvMotorOverCoolFault_LEN) == MCU2_DrvMotorOverCoolFault_ERROR
+      || CanManager::readSignal(MCU2, MCU2_MotorOpenPhaseFault_LSB, MCU2_MotorOpenPhaseFault_LEN) == MCU2_MotorOpenPhaseFault_ERROR)) {
+        return false;
+      }
+    return true;
+    }
+  return false;
 }
 
 
@@ -239,6 +241,81 @@ bool CanManager::checkBMSready(bool quick) {
 }
 
 
+/* ============================== Check MCU warnings ======================
+ * Checks whether the MCU has warnings that do not affect the driving
+ * capabilities (yet)
+ * @return: bool if MCU has something to warn about
+ */
+bool CanManager::checkMCUwarning() {
+  return CanManager::readSignal(MCU1, MCU1_ActMotorSpd_LSB, MCU1_ActMotorSpd_LEN) == MCU1_ActMotorSpd_INVALID
+    || CanManager::readSignal(MCU1, MCU1_ActMotorTq_LSB, MCU1_ActMotorTq_LEN) == MCU1_ActMotorTq_INVALID
+    || CanManager::readSignal(MCU1, MCU1_MaxMotorTq_LSB, MCU1_MaxMotorTq_LEN) == MCU1_MaxMotorTq_INVALID
+    || CanManager::readSignal(MCU1, MCU1_MaxMotorBrakeTq_LSB, MCU1_MaxMotorBrakeTq_LEN) == MCU1_MaxMotorBrakeTq_INVALID
+    || CanManager::readSignal(MCU1, MCU1_MaxMotorTq_LSB, MCU1_MaxMotorTq_LEN) > EEPROM.read(MAX_TORQUE)
+    || CanManager::readSignal(MCU1, MCU1_MaxMotorBrakeTq_LSB, MCU1_MaxMotorBrakeTq_LEN) > EEPROM.read(MAX_NEG_TORQUE)
+    || CanManager::readSignal(MCU1, MCU1_MotorRatoteDirection_LSB, MCU1_MotorRatoteDirection_LEN) == MCU1_MotorRatoteDirection_ERROR
+    || CanManager::readSignal(MCU2, MCU2_MotorTemp_LSB, MCU2_MotorTemp_LEN) == MCU2_MotorTemp_INVALID
+    || CanManager::readSignal(MCU2, MCU2_HardwareTemp_LSB, MCU2_HardwareTemp_LEN) == MCU2_HardwareTemp_INVALID
+    || CanManager::readSignal(MCU2, MCU2_PhaseCurrSensorState_LSB, MCU2_PhaseCurrSensorState_LEN) == MCU2_PhaseCurrSensorState_ERROR
+    || CanManager::readSignal(MCU2, MCU2_MotorSensorState_LSB, MCU2_MotorSensorState_LEN) == MCU2_MotorSensorState_ERROR
+    || CanManager::readSignal(MCU2, MCU2_DC_VoltSensorState_LSB, MCU2_DC_VoltSensorState_LEN) == MCU2_DC_VoltSensorState_ERROR
+    || CanManager::readSignal(MCU2, MCU2_DC_LowVoltWarning_LSB, MCU2_DC_LowVoltWarning_LEN) == MCU2_DC_LowVoltWarning_ERROR
+    || CanManager::readSignal(MCU2, MCU2_12V_LowVoltWarning_LSB, MCU2_12V_LowVoltWarning_LEN) == MCU2_12V_LowVoltWarning_ERROR
+    || CanManager::readSignal(MCU2, MCU2_WarningLevel_LSB, MCU2_WarningLevel_LEN) >= MCU2_WarningLevel_ERROR1
+    || CanManager::readSignal(MCU2, MCU2_MotorStallFault_LSB, MCU2_MotorStallFault_LEN) == MCU2_MotorStallFault_ERROR
+    || CanManager::readSignal(MCU3, MCU3_DC_MainWireVolt_LSB, MCU3_DC_MainWireVolt_LEN) == MCU3_DC_MainWireVolt_INVALID
+    || CanManager::readSignal(MCU3, MCU3_DC_MainWireCurr_LSB, MCU3_DC_MainWireCurr_LEN) == MCU3_DC_MainWireCurr_INVALID
+    || CanManager::readSignal(MCU3, MCU3_MotorPhaseCurr_LSB, MCU3_MotorPhaseCurr_LEN) == MCU3_MotorPhaseCurr_INVALID;
+}
+
+
+/* ============================== Motor status ============================
+ * Returns the motor state
+ * @return: int motor state (see constants)
+ */
+int CanManager::getMotorState() {
+  
+  //TODO what does MotorState/MotorMainState_STANDBY and READY mean?
+  return int(CanManager::readSignal(MCU1, MCU1_MotorMainState_LSB, MCU1_MotorMainState_LEN));
+}
+
+
+/* ============================== Motor temperature =======================
+ * Returns the motor temperature
+ * @return: int motor temoerature
+ */
+int CanManager::getMotorTemp() {
+  return int(CanManager::readSignal(MCU2, MCU2_MotorTemp_LSB, MCU2_MotorTemp_LEN, 1, MCU2_MotorTemp_OFFSET));
+}
+
+
+/* ============================== Controller temperature ==================
+ * Returns the controller temperature
+ * @return: int controller temoerature
+ */
+int CanManager::getControllerTemp() {
+  return int(CanManager::readSignal(MCU2, MCU2_HardwareTemp_LSB, MCU2_HardwareTemp_LEN, 1, MCU2_HardwareTemp_OFFSET));
+}
+
+
+/* ============================== Motor torque ============================
+ * Returns the motor torque
+ * @return: int motor torque
+ */
+int CanManager::getMotorTorque() {
+  return int(CanManager::readSignal(MCU1, MCU1_ActMotorTq_LSB, MCU1_ActMotorTq_LEN, MCU1_ActMotorTq_CONV_D));
+}
+
+
+/* ============================== Motor speed =============================
+ * Returns the motor speed
+ * @return: int motor speed
+ */
+int CanManager::getMotorSpeed() {
+  return int(CanManager::readSignal(MCU1, MCU1_ActMotorSpd_LSB, MCU1_ActMotorSpd_LEN, MCU1_ActMotorSpd_CONV_D));
+}
+
+
 /* ============================== Read CAN signals ========================
  * Retrieves the value of one signal from a foreign CAN message frame.
  * @param id: long ID of message to read
@@ -257,8 +334,13 @@ float CanManager::readSignal(uint32_t id, int lsb, int len, float conv, int offs
       } else {
         sig = messagesOther[i].readSignalBE(lsb, len, conv, offset);
       }
-      if (sig == -1) {
+      if (sig == -1 || (millis() - messagesOther[i].getLastUpdateTime() > 
+            messagesOther[i].getInterval() * CMIF)) {
         report("CAN_SIGNAL_ERROR", 2);
+        //TODO: List of critical messages
+        if (id == MCU1 || id == MCU2 || id == MCU3 || id == BMS1 || id == BMS2) {
+          sig = -1;
+        }
       }
       return sig;
     }

@@ -10,31 +10,35 @@
 
 
 /* ============================== Pins ==================================== */
-#define throttlePin 111       // Power throttle
-#define brakePedalPin 255     // Brake pedal (optional)
-#define direcPin 1            // Direction foreward/backward switch
-#define recuPin 2             // Brake energy recuperation on/off switch
-#define handBrakePin 3        // Hand brake state
-#define driverDoorPin 4       // Driver door open/close sensor
-#define powerButtonPin 5      // Power button push signal
-#define powerButtonLEDPin 6   // Power button internal LED
-#define prechargeRelaisPin 7  // Open/close relais for precharge resistor
-#define mainContactorPin 8    // Open/close main contactor
-#define kl15Pin 9             // For MCU start
-#define soundPin 10           // Speaker for acoustic signals
-#define selectCANPin 11       // For MCP2515 SPI interface
+#define throttlePin 6         // Power throttle
+#define brakePedalPin 9       // Brake pedal (optional)
+#define direcPin 26           // Direction foreward/backward switch
+#define recuPin 24            // Brake energy recuperation on/off switch
+#define handBrakePin 25       // Hand brake state
+#define driverDoorPin 25      // Driver door open/close sensor
+#define powerButtonPin 8      // Power button push signal
+#define powerButtonLEDPin 9   // Power button internal LED
+#define prechargeRelaisPin 45 // Open/close relais for precharge resistor
+#define mainContactorPin 46   // Open/close main contactor
+#define kl15Pin 27            // For MCU start
+#define soundPin 42           // Speaker for acoustic signals
+#define selectCANPin 10       // For MCP2515 SPI interface
 #define engineFaultLightPin 13// On the warning lights panel
-#define coolantTempGaugePin 14// Original gauge on dashboard
-#define coolantCyclePin 15    // Controlling the coolant pump
-#define fuelGaugePin 16       // Original gauge on dashboard
-#define brakeLightPin 17      // To activate brake lights when recu works
+#define coolantTempGaugePin 41// Original gauge on dashboard
+#define coolantCyclePin 40    // Controlling the coolant pump
+#define fuelGaugePin 43       // Original gauge on dashboard
+#define brakeLightPin 44      // To activate brake lights when recu works
 //TODO
 
 
 /* ============================== Constants ==============================
  * Constant values NOT to be changed by the user while vehicle operation
  */
+const uint8_t CMIF = 5;       // CAN message inactivity factor: Numer of
+                              // message intervals without update until
+                              // the message becomes erroneous
 const uint8_t LSCF = 8;       // Length of standard CAN frame
+const uint8_t PRCH = 0;       // Bool if there is a precharge installation
 const uint16_t PCDL = 1500;   // Precharge delay: time to delay the motor start
 const uint16_t MITL = 2000;   // MCU initialisation time limit
 const uint8_t TFDD = 150;     // Tone freuquency driver door: for warn signal
@@ -47,9 +51,11 @@ const uint8_t TTSF = 5;       // Throttle torque smooth factor (length of array)
 
 // PowerButton settings
 const int PBBF = 500;         // blink frequency for LED state 2 (error)
-const float PBFF = 0.15;      // brightness change per ms for LED state 1 (off)
+const float PBFF = 0.06;      // brightness change per ms for LED state 1 (off)
 const int PBDD = 1000;        // debounce delay for button reading
 
+// Conventions
+#define CAN_OK 0              // Check CAN bus state
 
 /* ============================== Report messages ========================
  * The report function fills one CAN frame with messages. The following
@@ -62,10 +68,12 @@ const int PBDD = 1000;        // debounce delay for button reading
 #define CAN_INIT_SUCCESS 4
 #define CAN_MESSAGE_INIT_MISSING 5
 #define CAN_SIGNAL_WRONG_ID 6
-#define CAN_SIGNAL_WRONG_LSB_LEN 7
+#define CAN_SIGNAL_ERROR 7
 
+#define MOTOR_START_FAULT 11
 #define MOTOR_WRONG_DIRECTION 12
 #define BRAKE_PEDAL_WRONG_SETTINGS 13
+#define BRAKE_PEDAL_CRITICAL_SETTINGS 14
 
 
 /* ============================== EEPROM =================================

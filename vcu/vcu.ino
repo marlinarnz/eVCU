@@ -101,7 +101,7 @@ void setup() {
 /* ============================== Main loop  ============================== */
 void loop() {
   can.update();               // Read news, spread news, save news
-  bool running = getMotorState() == MCU1_MotorMainState_RUNNING;
+  bool running = can.getMotorState() == MCU1_MotorMainState_RUNNING;
   if (running && !on) {
     throttle.reset();         // Reset the throttle if motor gets started
   } else if (!running && on) {
@@ -114,8 +114,8 @@ void loop() {
     updateDirec();            // Read state of the direction switch
     updateRecu();             // Read state of the recuperation switch
     throttle.update();        // Accelerate, brake and cruise
-    cool(int(can.readSignal(MCU2, MCU2_MotorTemp_LSB, MCU2_MotorTemp_LEN, 1, MCU2_MotorTemp_OFFSET)),
-         int(can.readSignal(MCU2, MCU2_HardwareTemp_LSB, MCU2_HardwareTemp_LEN, 1, MCU2_HardwareTemp_OFFSET))
+    cool(can.getMotorTemp(),
+         can.getControllerTemp()
          );                   // Check the temps and chill down if needed
   }
   updateGauges();             // Update all builtin gauges
@@ -145,7 +145,7 @@ void initMCU(bool precharge) {
   //TODO check MITL too short or too long
   
   while(!MCUready && millis() < endTime) {
-    int state = getMotorState();
+    int state = can.getMotorState();
     MCUready = can.checkMCUready(true)
                && (state == MCU1_MotorMainState_STANDBY
                   || state == MCU1_MotorMainState_PRECHARGE
@@ -187,26 +187,7 @@ void updateWarnSignals() {
     powerButton.stopMotor();
   }
   // Motor/MCU warnings
-  if (can.readSignal(MCU1, MCU1_ActMotorSpd_LSB, MCU1_ActMotorSpd_LEN) == MCU1_ActMotorSpd_INVALID
-      || can.readSignal(MCU1, MCU1_ActMotorTq_LSB, MCU1_ActMotorTq_LEN) == MCU1_ActMotorTq_INVALID
-      || can.readSignal(MCU1, MCU1_MaxMotorTq_LSB, MCU1_MaxMotorTq_LEN) == MCU1_MaxMotorTq_INVALID
-      || can.readSignal(MCU1, MCU1_MaxMotorBrakeTq_LSB, MCU1_MaxMotorBrakeTq_LEN) == MCU1_MaxMotorBrakeTq_INVALID
-      || can.readSignal(MCU1, MCU1_MaxMotorTq_LSB, MCU1_MaxMotorTq_LEN) > EEPROM.read(MAX_TORQUE)
-      || can.readSignal(MCU1, MCU1_MaxMotorBrakeTq_LSB, MCU1_MaxMotorBrakeTq_LEN) > EEPROM.read(MAX_NEG_TORQUE)
-      || can.readSignal(MCU1, MCU1_MotorRatoteDirection_LSB, MCU1_MotorRatoteDirection_LEN) == MCU1_MotorRatoteDirection_ERROR
-      || can.readSignal(MCU2, MCU2_MotorTemp_LSB, MCU2_MotorTemp_LEN) == MCU2_MotorTemp_INVALID
-      || can.readSignal(MCU2, MCU2_HardwareTemp_LSB, MCU2_HardwareTemp_LEN) == MCU2_HardwareTemp_INVALID
-      || can.readSignal(MCU2, MCU2_PhaseCurrSensorState_LSB, MCU2_PhaseCurrSensorState_LEN) == MCU2_PhaseCurrSensorState_ERROR
-      || can.readSignal(MCU2, MCU2_MotorSensorState_LSB, MCU2_MotorSensorState_LEN) == MCU2_MotorSensorState_ERROR
-      || can.readSignal(MCU2, MCU2_DC_VoltSensorState_LSB, MCU2_DC_VoltSensorState_LEN) == MCU2_DC_VoltSensorState_ERROR
-      || can.readSignal(MCU2, MCU2_DC_LowVoltWarning_LSB, MCU2_DC_LowVoltWarning_LEN) == MCU2_DC_LowVoltWarning_ERROR
-      || can.readSignal(MCU2, MCU2_12V_LowVoltWarning_LSB, MCU2_12V_LowVoltWarning_LEN) == MCU2_12V_LowVoltWarning_ERROR
-      || can.readSignal(MCU2, MCU2_WarningLevel_LSB, MCU2_WarningLevel_LEN) >= MCU2_WarningLevel_ERROR1
-      || can.readSignal(MCU2, MCU2_MotorStallFault_LSB, MCU2_MotorStallFault_LEN) == MCU2_MotorStallFault_ERROR
-      || can.readSignal(MCU3, MCU3_DC_MainWireVolt_LSB, MCU3_DC_MainWireVolt_LEN) == MCU3_DC_MainWireVolt_INVALID
-      || can.readSignal(MCU3, MCU3_DC_MainWireCurr_LSB, MCU3_DC_MainWireCurr_LEN) == MCU3_DC_MainWireCurr_INVALID
-      || can.readSignal(MCU3, MCU3_MotorPhaseCurr_LSB, MCU3_MotorPhaseCurr_LEN) == MCU3_MotorPhaseCurr_INVALID
-      ) {
+  if (can.checkMCUwarning()) {
     
     //TODO: Add BMS warnings in the if condition
     
@@ -215,8 +196,8 @@ void updateWarnSignals() {
     digitalWrite(engineFaultLightPin, LOW);
   }
   // Brake light
-  if (can.readSignal(MCU1, MCU1_ActMotorTq_LSB, MCU1_ActMotorTq_LEN, MCU1_ActMotorTq_CONV_D) >= EEPROM.read(BRAKE_LIGHT_TORQUE_THRESHOLD)
-      && can.readSignal(MCU1, MCU1_MotorState_LSB, MCU1_MotorState_LEN) == MCU1_MotorState_GENERATE) {
+  if (can.getMotorTorque() >= EEPROM.read(BRAKE_LIGHT_TORQUE_THRESHOLD)
+      && can.getMotorState() == MCU1_MotorState_GENERATE) {
     digitalWrite(brakeLightPin, HIGH);
   } else {
     digitalWrite(brakeLightPin, LOW);
@@ -229,30 +210,11 @@ void updateWarnSignals() {
  */
 void updateGauges() {
   // Temperature gauge
-  int motorTemp = int(can.readSignal(MCU2, MCU2_MotorTemp_LSB, MCU2_MotorTemp_LEN, 1, MCU2_MotorTemp_OFFSET));
   analogWrite(coolantTempGaugePin,
-              int(max(MTGL, min(MTGU, motorTemp)) * (MTGU / 255)));
+              int(max(MTGL, min(MTGU, can.getMotorTemp())) * (MTGU / 255)));
   
   // Fuel gauge --> read BMS
   //TODO
-}
-
-
-/* ============================== MCU status ==============================
- * Returns the motor state
- * @return: int motor state (see constants)
- */
-int getMotorState() {
-  
-  //TODO what does MotorState/MotorMainState_STANDBY and READY mean?
-
-  int state = int(can.readSignal(MCU1, MCU1_MotorMainState_LSB, MCU1_MotorMainState_LEN));
-  if (state == MCU1_MotorMainState_RUNNING
-      && ((can.readSignal(MCU1, MCU1_MotorRatoteDirection_LSB, MCU1_MotorRatoteDirection_LEN) == MCU1_MotorRatoteDirection_FORWARD && !direc)
-          || (can.readSignal(MCU1, MCU1_MotorRatoteDirection_LSB, MCU1_MotorRatoteDirection_LEN) == MCU1_MotorRatoteDirection_BACKWARD && direc))) {
-    report("MOTOR_WRONG_DIRECTION", 3);
-  }
-  return state;
 }
 
 

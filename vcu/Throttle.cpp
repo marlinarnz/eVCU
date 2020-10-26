@@ -88,9 +88,7 @@ void Throttle::update() {
   }
   
   // Check if max RPM is exceeded
-  int actSpd = _can->readSignal(MCU1, MCU1_ActMotorSpd_LSB, MCU1_ActMotorSpd_LEN, MCU1_ActMotorSpd_CONV_D);
-  if (actSpd > (EEPROM.read(MAX_RPM) * 1000)
-      && actSpd != MCU1_ActMotorSpd_INVALID) {
+  if (_can->getMotorSpeed() > EEPROM.read(MAX_RPM) * 1000) {
     torqueReq = min(0, torqueReq);
   }
   

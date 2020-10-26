@@ -28,6 +28,12 @@ class CanManager {
     int checkError();
     bool checkMCUready(bool quick=false);
     bool checkBMSready(bool quick=false);
+    bool checkMCUwarning();
+    int getMotorState();
+    int getMotorTemp();
+    int getControllerTemp();
+    int getMotorTorque();
+    int getMotorSpeed();
     float readSignal(uint32_t id, int lsb, int len, float conv=1, int offset=0);
     void writeSignal(uint32_t id, int lsb, int len, long val, float conv=1, int offset=0);
     CanMessage messagesVCU[N_VCU_MESSAGES];

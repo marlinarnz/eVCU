@@ -51,6 +51,31 @@ test(init__success) {
   assertEqual(classUnderTest.messagesOther[4].getId(), id);
 }
 
+test(checkMCUready_normal_fail) {
+  classUnderTest.begin();
+  assertFalse(classUnderTest.checkMCUready());
+}
+
+test(checkMCUready_quick_fail) {
+  classUnderTest.begin();
+  assertFalse(classUnderTest.checkMCUready(true));
+}
+
+test(checkBMSready_normal_fail) {
+  classUnderTest.begin();
+  assertFalse(classUnderTest.checkBMSready());
+}
+
+test(checkBMSready_quick_fail) {
+  classUnderTest.begin();
+  assertFalse(classUnderTest.checkBMSready(true));
+}
+
+test(checkMCUwarning__fail) {
+  classUnderTest.begin();
+  assertFalse(classUnderTest.checkMCUwarning());
+}
+
 test(readSignal_lsbTooHigh_fail) {
   assertEqual(classUnderTest.readSignal(MCU1, 65, 1),
               readSignalFail);

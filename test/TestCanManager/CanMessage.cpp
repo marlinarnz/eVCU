@@ -15,12 +15,14 @@
  * @param interv: integer interval for periodic sending in millis. 0 for none
  */
 CanMessage::CanMessage(uint32_t ident, MCP2515* canObj, int interv)
-  : _id(ident), _canObj(canObj), _interval(interv), _lastSent(0), _frame{} {
+  : _id(ident), _canObj(canObj), _interval(interv), _lastSent(- interv),
+  _lastUpdate(- interv * CMIF), _frame{} {
   CanMessage::setFrameBytes(0);
 }
 // Default constructor to enable arrays
 CanMessage::CanMessage()
-  : _id(0), _canObj(NULL), _interval(0), _lastSent(0), _frame{} {}
+  : _id(0), _canObj(NULL), _interval(0), _lastSent(0), _lastUpdate(0),
+  _frame{} {}
 
 
 /* ============================== Return ID ===============================
@@ -32,6 +34,15 @@ uint32_t CanMessage::getId() {
 }
 
 
+/* ============================== Return interval =========================
+ * Returns the message interval
+ * @return: int interval in milliseconds
+ */
+int CanMessage::getInterval() {
+  return _interval;
+}
+
+
 /* ============================== Set frame ===============================
  * Sets each byte of the frame to the given value. Can be used for testing.
  * @param val: (optional) byte. Default 0
@@ -40,6 +51,15 @@ void CanMessage::setFrameBytes(uint8_t val) {
   for (uint8_t i=0; i<LSCF; i++) {
     CanMessage::writeByte(i, val);
   }
+}
+
+
+/* ============================== Last update time ========================
+ * Returns the timestamp where the message has been updated the last time
+ * @return: long time in milliseconds
+ */
+long CanMessage::getLastUpdateTime() {
+  return _lastUpdate;
 }
 
 
@@ -99,6 +119,7 @@ void CanMessage::writeByte(int b, long val, float conv, int offset) {
   if (conv > 0 && offset >= 0
       && CanMessage::_checkLSBandLen(b * 8, 8)) {
     _frame[b] = (uint8_t)(val / conv + offset);
+    _lastUpdate = millis();
   }
 }
 
@@ -231,6 +252,7 @@ void CanMessage::writeSignal(int lsb, int len, long val, float conv, int offset)
       _frame[lastByte] = (_frame[lastByte] & (0xFF >> (8 - leftFilled)))
                          | oldLeft;
     }
+  _lastUpdate = millis();
   }
 }
 

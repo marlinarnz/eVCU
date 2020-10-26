@@ -34,6 +34,15 @@ uint32_t CanMessage::getId() {
 }
 
 
+/* ============================== Return interval =========================
+ * Returns the message interval
+ * @return: int interval in milliseconds
+ */
+int CanMessage::getInterval() {
+  return _interval;
+}
+
+
 /* ============================== Set frame ===============================
  * Sets each byte of the frame to the given value. Can be used for testing.
  * @param val: (optional) byte. Default 0
@@ -42,6 +51,15 @@ void CanMessage::setFrameBytes(uint8_t val) {
   for (uint8_t i=0; i<LSCF; i++) {
     CanMessage::writeByte(i, val);
   }
+}
+
+
+/* ============================== Last update time ========================
+ * Returns the timestamp where the message has been updated the last time
+ * @return: long time in milliseconds
+ */
+long CanMessage::getLastUpdateTime() {
+  return _lastUpdate;
 }
 
 
@@ -81,8 +99,7 @@ void CanMessage::send(int interv) {
  * @return: float signal content, already converted. -1 as error code
  */
 float CanMessage::readByte(int b, float conv, int offset) {
-  if (CanMessage::_checkLSBandLen(b * 8, 8) &&
-      CanMessage::_checkUpdated()) {
+  if (CanMessage::_checkLSBandLen(b * 8, 8)) {
     return _frame[b] * conv - offset;
   }
   // Return error code otherwise  
@@ -120,8 +137,7 @@ void CanMessage::writeByte(int b, long val, float conv, int offset) {
  * TODO: Properly return four byte signals with odd lsb
  */
 float CanMessage::readSignalLE(int lsb, int len, float conv, int offset) {
-  if (CanMessage::_checkLSBandLen(lsb, len) &&
-      CanMessage::_checkUpdated()) {
+  if (CanMessage::_checkLSBandLen(lsb, len)) {
     uint32_t sig = 0;
     uint8_t lastByte = CanMessage::_getLastByte(lsb, len);
     uint8_t firstByte = int(lsb / 8);
@@ -158,8 +174,7 @@ float CanMessage::readSignalLE(int lsb, int len, float conv, int offset) {
 
 // Big endian
 float CanMessage::readSignalBE(int lsb, int len, float conv, int offset) {
-  if (CanMessage::_checkLSBandLen(lsb, len) &&
-      CanMessage::_checkUpdated()) {
+  if (CanMessage::_checkLSBandLen(lsb, len)) {
     uint32_t sig = 0;
     uint8_t lastByte = CanMessage::_getLastByte(lsb, len);
     uint8_t firstByte = int(lsb / 8);
@@ -252,16 +267,6 @@ void CanMessage::writeSignal(int lsb, int len, long val, float conv, int offset)
 bool CanMessage::_checkLSBandLen(int lsb, int len) {
   return len > 0 && lsb < LSCF * 8 && lsb >= 0 && len <= sizeof(long) * 8
     && ((len <= lsb + 8 && lsb >= 8) || lsb + len <= 8);
-}
-
-
-/* ============================== Check updated ===========================
- * Checks whether the message content has been updated or the device
- * sending it is offline.
- * @return: boolean whether message is up to date
- */
-bool CanMessage::_checkUpdated() {
-  return millis() - _lastUpdate < CMIF * _interval;
 }
 
 
