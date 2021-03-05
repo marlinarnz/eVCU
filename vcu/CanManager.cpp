@@ -257,7 +257,7 @@ bool CanManager::checkMCUwarning() {
     || CanManager::readSignal(MCU2, MCU2_MotorTemp_LSB, MCU2_MotorTemp_LEN) == MCU2_MotorTemp_INVALID
     || CanManager::readSignal(MCU2, MCU2_HardwareTemp_LSB, MCU2_HardwareTemp_LEN) == MCU2_HardwareTemp_INVALID
     || CanManager::readSignal(MCU2, MCU2_PhaseCurrSensorState_LSB, MCU2_PhaseCurrSensorState_LEN) == MCU2_PhaseCurrSensorState_ERROR
-    || CanManager::readSignal(MCU2, MCU2_MotorSensorState_LSB, MCU2_MotorSensorState_LEN) == MCU2_MotorSensorState_ERROR
+    || CanManager::readSignal(MCU2, MCU2_TempSensorState_LSB, MCU2_TempSensorState_LEN) == MCU2_TempSensorState_ERROR
     || CanManager::readSignal(MCU2, MCU2_DC_VoltSensorState_LSB, MCU2_DC_VoltSensorState_LEN) == MCU2_DC_VoltSensorState_ERROR
     || CanManager::readSignal(MCU2, MCU2_DC_LowVoltWarning_LSB, MCU2_DC_LowVoltWarning_LEN) == MCU2_DC_LowVoltWarning_ERROR
     || CanManager::readSignal(MCU2, MCU2_12V_LowVoltWarning_LSB, MCU2_12V_LowVoltWarning_LEN) == MCU2_12V_LowVoltWarning_ERROR
@@ -338,7 +338,7 @@ float CanManager::readSignal(uint32_t id, int lsb, int len, float conv, int offs
             messagesOther[i].getInterval() * CMIF)) {
         report("CAN_SIGNAL_ERROR", 2);
         //TODO: List of critical messages
-        if (id == MCU1 || id == MCU2 || id == MCU3 || id == BMS1 || id == BMS2) {
+        if (id == MCU1 || id == MCU2 || id == MCU3 || id == BMS1) {
           sig = -1;
         }
       }
