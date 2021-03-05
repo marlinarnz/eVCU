@@ -54,14 +54,17 @@ void CanMessage::send(int interv) {
   }
   if ((_interval > 0 && millis() - _lastSent > _interval) || _interval == 0) {
     struct can_frame frame;
-    frame.can_id = getId();
+    frame.can_id = CanMessage::getId() | CAN_EFF_FLAG;
     frame.can_dlc = LSCF;
     for (uint8_t i=0; i<LSCF; i++) {
       frame.data[i] = _frame[i];
     }
     if (_id > 2047) {
       // Extended ID
-      _canObj->sendMessage(MCP2515::TXB1, &frame);
+      MCP2515::ERROR err = _canObj->sendMessage(MCP2515::TXB1, &frame);
+      if (err != MCP2515::ERROR_OK) {
+        Serial.println("Send message error: " + String(err));
+      }
     } else {
       _canObj->sendMessage(&frame);
     }
@@ -220,7 +223,7 @@ void CanMessage::writeSignal(int lsb, int len, long val, float conv, int offset)
     }
 
     // Loop through the signal with little endian byte order
-    for (int i=firstByte; i>=lastByte; i--) {
+    for (int i=lastByte; i<=firstByte; i++) {
       _frame[i] = (uint8_t)(sig);
       sig >>= 8;
     }

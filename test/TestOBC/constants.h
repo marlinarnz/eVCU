@@ -381,7 +381,7 @@ const VAL_DATA_TYPE brakePedalFunction = 0; // 0 for off; 1 for on (3% = no neg 
 #define MCU3_MotorPhaseCurr_INVALID 0xFFFF
 
 // BMS messages
-#define BMS1 0x520
+#define BMS1 0x1806E5F4
 #define BMS1_INTERVAL 500
 #define BMS1_OBC_VoltageSet_LSB 8
 #define BMS1_OBC_VoltageSet_LEN 16
@@ -407,7 +407,7 @@ const VAL_DATA_TYPE brakePedalFunction = 0; // 0 for off; 1 for on (3% = no neg 
 #define BMS2_PrechargeFinishSts_F_ERROR 1
 
 // OBC messages
-#define OBC1 0x618
+#define OBC1 0x18FF50E5
 #define OBC1_INTERVAL 500
 #define OBC1_ChargerVoltage_LSB 8
 #define OBC1_ChargerVoltage_LEN 16
@@ -454,7 +454,7 @@ const VAL_DATA_TYPE brakePedalFunction = 0; // 0 for off; 1 for on (3% = no neg 
 #define OBC1_SoftwareVersion_LEN 8
 #define OBC1_HardwareVersion_LSB 56
 #define OBC1_HardwareVersion_LEN 8
-#define OBC2 0x619
+#define OBC2 0x18FF50E6
 #define OBC2_INTERVAL 500
 #define OBC2_ACVoltageInput_LSB 8
 #define OBC2_ACVoltageInput_LEN 16
@@ -490,7 +490,7 @@ const VAL_DATA_TYPE brakePedalFunction = 0; // 0 for off; 1 for on (3% = no neg 
 #define OBC2_ErrorFlag_LOCK_FAULT_PFC_UNDERVOLT 9
 #define OBC2_ErrorFlag_LOCK_FAULT_OUTPUT_UNDERVOLT 10
 #define OBC2_ErrorFlag_LOCK_FAULT_OUTPUT_OVERVOLT 11
-#define OBC3 0x620
+#define OBC3 0x18FF50E7
 #define OBC3_INTERVAL 500
 #define OBC3_ACCurrentInput_LSB 8
 #define OBC3_ACCurrentInput_LEN 16

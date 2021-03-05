@@ -95,11 +95,7 @@ void printMessage(uint32_t id, uint8_t len, uint8_t *frame) {
 // Read a on/off pin
 int getSwitchPos(int pin) {
 	int val = digitalRead(pin);
-	if(val==LOW) {
-		return 0;
-	} else {
-	  return 1;
-	}
+	return val==0;
 }
 
 // Read poti position
@@ -117,7 +113,7 @@ void setup() {
   pinMode(PIN_POTI_1, INPUT);
   pinMode(PIN_POTI_2, INPUT);
 
-  Serial.begin(115200);
+  Serial.begin(9600);
   SPI.begin();
 
   // Fill the messages array
@@ -128,53 +124,68 @@ void setup() {
   // Set initial values to the BMS frame
   msgToOBC.writeSignal(BMS1_OBC_ChargeCommand_LSB,
     BMS1_OBC_ChargeCommand_LEN,
-    BMS1_OBC_ChargeCommand_OFF);
+    BMS1_OBC_ChargeCommand_ON);
+  msgToOBC.writeSignal(BMS1_OBC_VoltageSet_LSB,
+    BMS1_OBC_VoltageSet_LEN,
+    350,
+    BMS1_OBC_VoltageSet_CONV_D);
+  msgToOBC.writeSignal(BMS1_OBC_CurrentSet_LSB,
+    BMS1_OBC_CurrentSet_LEN,
+    5,
+    BMS1_OBC_CurrentSet_CONV_D);
 	
 	// Start the CAN bus communication
 	Serial.println("Starting the MCP2515");
 	CAN.reset();
-  CAN.setBitrate(CAN_500KBPS, MCP_8MHZ);
+  CAN.setBitrate(CAN_250KBPS, MCP_8MHZ);
   CAN.setNormalMode();
 	Serial.println("Done.");
 }
 	
 // Check the bus in an infinite loop
 void loop() {
-	if(MCP2515::ERROR_OK == CAN.readMessage(&frame)) {//check if data coming
-		
-    Serial.println(String(frame.can_id, HEX));
+  if (CAN.checkReceive()) {
+    //Serial.print("Message received: ");
+    MCP2515::ERROR err = CAN.readMessage(MCP2515::RXB1, &frame);
+    if (err != MCP2515::ERROR_NOMSG && err != MCP2515::ERROR_OK) {
+      Serial.println("CAN bus error: " + String(err));
+      delay(400);
+    }
     
-		// Print if something new appears
-		for(int msg=0; msg<N_MSG; msg++) {
-			if(msgs[msg].getId()==frame.can_id) {
-				for(int i=0; i<min(frame.can_dlc, LSCF); i++) {
-					if(msgs[msg].readByte(i)!=frame.data[i]) {
-            printMessage(frame.can_id, frame.can_dlc, frame.data);
-				    // Update the msgs array
-						for(int j=0; j<frame.can_dlc; j++) {
-							msgs[msg].writeByte(j, frame.data[j]);
-						}
-					}
-				}
-			}
-		}
-    //delay(400);
-	}
+  	if(MCP2515::ERROR_OK == err) {
+      //Serial.println(String(frame.can_id, HEX));
+      //printMessage(frame.can_id, frame.can_dlc, frame.data);
+  		// Print if something new appears
+  		for(int msg=0; msg<N_MSG; msg++) {
+  			if(msgs[msg].getId()==frame.can_id) {
+  				for(int i=0; i<min(frame.can_dlc, LSCF); i++) {
+  					if(msgs[msg].readByte(i)!=frame.data[i]) {
+              printMessage(frame.can_id, frame.can_dlc, frame.data);
+  				    // Update the msgs array
+  						for(int j=0; j<frame.can_dlc; j++) {
+  							msgs[msg].writeByte(j, frame.data[j]);
+  						}
+  					}
+  				}
+  			}
+  		}
+  	}
+  }
 	
 	// Update BMS signal
-	msgToOBC.writeSignal(BMS1_OBC_ChargeCommand_LSB,
+	/*msgToOBC.writeSignal(BMS1_OBC_ChargeCommand_LSB,
 		BMS1_OBC_ChargeCommand_LEN,
 		getSwitchPos(PIN_ON_OFF));
-  int volt = getPotiPos(PIN_POTI_1, 350, 360);
+  int volt = getPotiPos(PIN_POTI_1, 0, 350);
   msgToOBC.writeSignal(BMS1_OBC_VoltageSet_LSB,
     BMS1_OBC_VoltageSet_LEN,
     volt,
     BMS1_OBC_VoltageSet_CONV_D);
-  int amp = getPotiPos(PIN_POTI_2, 0, 3);
+  int amp = getPotiPos(PIN_POTI_2, 0, 5);
   msgToOBC.writeSignal(BMS1_OBC_CurrentSet_LSB,
     BMS1_OBC_CurrentSet_LEN,
     amp,
-    BMS1_OBC_CurrentSet_CONV_D);
+    BMS1_OBC_CurrentSet_CONV_D);*/
 	
 	// Write and send the BMS signal
 	msgToOBC.send();
