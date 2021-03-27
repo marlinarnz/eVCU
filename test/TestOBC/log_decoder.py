@@ -1,4 +1,5 @@
 import xlrd
+import math
 
 
 def decode_str(matrix, msg_str):
@@ -18,8 +19,8 @@ def decode_str(matrix, msg_str):
 			val = int(bytes[int(signal[0]/8)])
 		else:
 			val = (bytes[int(signal[0]/8)] & (0x00FF >> (8-(signal[0]%8+signal[1])))) >> (signal[0]%8)
-		ret_str = ret_str + name + ': ' + str(val*signal[2]+signal[3]) + '; '
-	return ret_str[:-2]		
+		ret_str = ret_str + name + ': ' + str(math.round(val*signal[2]+signal[3], 1)) + '; '
+	return ret_str[:-2]
 
 def get_map(ident):
 	# Return dict with signal name and tuple of lsb, len for given ID
@@ -81,7 +82,7 @@ with open('logs_decoded.txt', 'w') as out:
 				out.write('    ' + decode_str('BMS_OBC', msg) + '\n\n')
 			msg_dict.pop('1806E5F4')
 		# Decode the OBC messages with different maps
-		for map in ['OBC_BMS_'+str(i) for i in [1,2,3]]:
+		for map in ['OBC_BMS_'+str(i) for i in [1,2,3]] + ['TC']:
 			out.write('  ' + map + ':\n')
 			for name, msgs in msg_dict.items():
 				out.write('    ' + name + ':\n')
