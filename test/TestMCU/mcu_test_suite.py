@@ -16,9 +16,15 @@ class MCUTestGUI(tk.Frame):
 		# Init pins
 		GPIO.setwarnings(False)
 		GPIO.setmode(GPIO.BCM)
-		GPIO.setup(13, GPIO.IN)
-		GPIO.setup(19, GPIO.IN)
-		GPIO.setup(26, GPIO.IN)
+		GPIO.setup(26, GPIO.IN) # Pushbutton
+		GPIO.setup(19, GPIO.IN) # Lever switch
+		GPIO.setup(13, GPIO.IN) # Standard switch
+		GPIO.setup(2, GPIO.OUT) # Relay
+		GPIO.setup(3, GPIO.OUT) # Relay
+		GPIO.setup(4, GPIO.OUT) # Relay
+		GPIO.output(2, True) # Relay switches with negative input
+		GPIO.output(3, True)
+		GPIO.output(4, True)
 		
 		# CAN utils
 		self.__can0 = None
@@ -57,7 +63,14 @@ class MCUTestGUI(tk.Frame):
 					print(e)
 					self.stop()
 		self.__button_run = tk.Button(self.__top, text='Start/Stop', command=ss)
-		self.__button_run.grid(row=1, column=1, columnspan=grid_frame-2)
+		self.__button_run.grid(row=1, column=1, columnspan=3)
+		
+		# Add a HV connect button
+		def hv():
+			if self.__on:
+				self.connect_hv()
+		self.__button_hv = tk.Button(self.__top, text='HV connect', command=hv)
+		self.__button_hv.grid(row=1, column=5, columnspan=3)
 
 		# Add message streams
 		messages = [0x101, 0x105, 0x106, 0x107]
@@ -108,12 +121,32 @@ class MCUTestGUI(tk.Frame):
 			0x0,
 			0x0]
 		print('Switched CAN bus on')
+		GPIO.output(2, False)
+		print('Switched APEV528 on')
 
 	def stop(self):
+		# Switch off everything
+		GPIO.output(4, True)
+		GPIO.output(3, True)
+		print('Switched HV off')
+		GPIO.output(2, True)
+		print('Switched APEV528 off')
 		# Stop the bus
-		if self.log: self.logfile.close()
 		os.system('sudo ifconfig can0 down')
 		print('Switched CAN bus off')
+		if self.log: self.logfile.close()
+
+	def connect_hv(self):
+		# Switch relays
+		start = time.time()
+		GPIO.output(3, False)
+		print('Switched precharge on')
+		# Wait for precharge
+		while time.time() - start < 0.5:
+			pass
+		GPIO.output(4, False)
+		GPIO.output(3, True)
+		print('Switched HV on')
 
 	def read(self):
 		# Read the CAN bus
