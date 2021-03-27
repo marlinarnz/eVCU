@@ -1,12 +1,11 @@
 import xlrd
-import math
 
 
 def decode_str(matrix, msg_str):
 	# Return a string with message content based on matrix map
 	map = get_map(matrix)
 	bytes = get_msg_bytes(msg_str)
-	ret_str = ''
+	ret_str = msg_str + ' --> '
 	for name, signal in map.items():
 		val = None
 		# Assume the signal to be full bytes only or within one byte
@@ -19,7 +18,7 @@ def decode_str(matrix, msg_str):
 			val = int(bytes[int(signal[0]/8)])
 		else:
 			val = (bytes[int(signal[0]/8)] & (0x00FF >> (8-(signal[0]%8+signal[1])))) >> (signal[0]%8)
-		ret_str = ret_str + name + ': ' + str(math.round(val*signal[2]+signal[3], 1)) + '; '
+		ret_str = ret_str + name + ': ' + str(round(val*signal[2]+signal[3], 1)) + '; '
 	return ret_str[:-2]
 
 def get_map(ident):
