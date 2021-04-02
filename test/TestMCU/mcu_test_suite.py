@@ -16,15 +16,16 @@ class MCUTestGUI(tk.Frame):
 		# Init pins
 		GPIO.setwarnings(False)
 		GPIO.setmode(GPIO.BCM)
-		GPIO.setup(26, GPIO.IN) # Pushbutton
-		GPIO.setup(19, GPIO.IN) # Lever switch
-		GPIO.setup(13, GPIO.IN) # Standard switch
+		GPIO.setup(26, GPIO.IN) # Pushbutton: key position crank
+		GPIO.setup(19, GPIO.IN) # Lever switch: torque
+		GPIO.setup(13, GPIO.IN) # Standard switch: nothing
 		GPIO.setup(2, GPIO.OUT) # Relay
 		GPIO.setup(3, GPIO.OUT) # Relay
 		GPIO.setup(4, GPIO.OUT) # Relay
 		GPIO.output(2, True) # Relay switches with negative input
 		GPIO.output(3, True)
 		GPIO.output(4, True)
+		self.gear_pos = 0b01000000 # Park
 		
 		# CAN utils
 		self.__can0 = None
@@ -115,8 +116,8 @@ class MCUTestGUI(tk.Frame):
 		self.vcu_frame = [0, # Torque Req / 0.392
 			0, # Speed Req
 			0, # continued
-			0b1,# Change gear and authentication, irrelevant for MCU
-			0b00001001, # with gear D: 0b00111001, R: 0b00011001
+			0b00100000,# Change gear and authentication, irrelevant for MCU
+			0b00001001, # with gear D: 0b00110000, R: 0b00010000
 			0b10000100, # key pos., motor mode, warning level
 			0x0,
 			0x0]
@@ -126,6 +127,8 @@ class MCUTestGUI(tk.Frame):
 
 	def stop(self):
 		# Switch off everything
+		self.gear_pos = 0b01000000
+		print('Switched gear lever to park')
 		GPIO.output(4, True)
 		GPIO.output(3, True)
 		print('Switched HV off')
@@ -147,6 +150,8 @@ class MCUTestGUI(tk.Frame):
 		GPIO.output(4, False)
 		GPIO.output(3, True)
 		print('Switched HV on')
+		self.gear_pos = 0b00110000
+		print('Switched gear lever to drive')
 
 	def read(self):
 		# Read the CAN bus
@@ -162,6 +167,8 @@ class MCUTestGUI(tk.Frame):
 		# Write the VCU message on the bus
 		if self.__on:
 			if time.time() - self.send_time >= 0.02:
+				# Gear position (and vehicle state)
+				self.vcu_frame[4] = 0b00001001 | self.gear_pos
 				# Key position crank
 				if GPIO.input(26) == GPIO.HIGH:
 					self.vcu_frame[5] = 0b11000100
