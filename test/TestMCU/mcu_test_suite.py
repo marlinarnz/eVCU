@@ -18,7 +18,7 @@ class MCUTestGUI(tk.Frame):
 		GPIO.setmode(GPIO.BCM)
 		GPIO.setup(26, GPIO.IN) # Pushbutton: key position crank
 		GPIO.setup(19, GPIO.IN) # Lever switch: torque
-		GPIO.setup(13, GPIO.IN) # Standard switch: nothing
+		GPIO.setup(13, GPIO.IN) # Standard switch: Key on/acc
 		GPIO.setup(2, GPIO.OUT) # Relay
 		GPIO.setup(3, GPIO.OUT) # Relay
 		GPIO.setup(4, GPIO.OUT) # Relay
@@ -26,6 +26,7 @@ class MCUTestGUI(tk.Frame):
 		GPIO.output(3, True)
 		GPIO.output(4, True)
 		self.gear_pos = 0b01000000 # Park
+		self.key_pos = 0b01000000 # Acc
 		
 		# CAN utils
 		self.__can0 = None
@@ -42,7 +43,7 @@ class MCUTestGUI(tk.Frame):
 		# Define the top level GUI frame
 		self.__top = tk.Tk()
 		self.__top.title(name)
-		self.__top.geometry("800x500")
+		self.__top.geometry("1010x500")
 		cells = 0
 		grid_frame = 10
 		while cells < grid_frame:
@@ -63,18 +64,23 @@ class MCUTestGUI(tk.Frame):
 				except Exception as e:
 					print(e)
 					self.stop()
-		self.__button_run = tk.Button(self.__top, text='Start/Stop', command=ss)
+		self.__button_run = tk.Button(self.__top, text='Start/Stop Comm', command=ss)
 		self.__button_run.grid(row=1, column=1, columnspan=3)
 		
 		# Add a HV connect button
+		self.__running = False
 		def hv():
-			if self.__on:
+			if self.__on and not self.__running:
 				self.connect_hv()
-		self.__button_hv = tk.Button(self.__top, text='HV connect', command=hv)
+				self.__running = True
+			elif self.__on and self.__running:
+                                self.disconnect_hv()
+                                self.__running = False
+		self.__button_hv = tk.Button(self.__top, text='HV/Motor start/stop', command=hv)
 		self.__button_hv.grid(row=1, column=5, columnspan=3)
 
 		# Add message streams
-		messages = [0x101, 0x105, 0x106, 0x107]
+		messages = [0x101, 0x102, 0x105, 0x106, 0x107]
 		self.__streams = {hex(id): tk.StringVar() for id in messages}
 		width = int((grid_frame-0)/len(messages))
 		self.__stream_labels = {id: tk.Label(self.__top, text=str(id)).grid(
@@ -121,12 +127,22 @@ class MCUTestGUI(tk.Frame):
 			0b10000100, # key pos., motor mode, warning level
 			0x0,
 			0x0]
+		self.vcu2_frame = [0, # Pedal position / 0.392
+                        0, # Status signals
+			0, # Speed Req
+			0, # Regen, status signals
+			0,# AC power limit
+			0b00100001, # Max torque / 0.392
+			0x0,
+			0x0]
 		print('Switched CAN bus on')
 		GPIO.output(2, False)
 		print('Switched APEV528 on')
 
 	def stop(self):
 		# Switch off everything
+		self.key_pos = 0b00000000
+		print('Switched key position off')
 		self.gear_pos = 0b01000000
 		print('Switched gear lever to park')
 		GPIO.output(4, True)
@@ -140,6 +156,8 @@ class MCUTestGUI(tk.Frame):
 		if self.log: self.logfile.close()
 
 	def connect_hv(self):
+		self.key_pos = 0b10000000
+		print('Switched key position on')
 		# Switch relays
 		start = time.time()
 		GPIO.output(3, False)
@@ -147,11 +165,21 @@ class MCUTestGUI(tk.Frame):
 		# Wait for precharge
 		while time.time() - start < 0.5:
 			pass
-		GPIO.output(4, False)
 		GPIO.output(3, True)
+		GPIO.output(4, False)
 		print('Switched HV on')
 		self.gear_pos = 0b00110000
 		print('Switched gear lever to drive')
+
+	def disconnect_hv(self):
+		self.gear_pos = 0b01000000
+		print('Switched gear lever to park')
+		self.key_pos = 0b01000000
+		print('Switched key position Acc')
+		# Switch relays
+		GPIO.output(3, True)
+		GPIO.output(4, True)
+		print('Switched HV off')
 
 	def read(self):
 		# Read the CAN bus
@@ -169,22 +197,29 @@ class MCUTestGUI(tk.Frame):
 			if time.time() - self.send_time >= 0.02:
 				# Gear position (and vehicle state)
 				self.vcu_frame[4] = 0b00001001 | self.gear_pos
-				# Key position crank
-				if GPIO.input(26) == GPIO.HIGH:
-					self.vcu_frame[5] = 0b11000100
+				# Key position
+				if GPIO.input(13) == GPIO.HIGH: # acc/on
+					self.key_pos = 0b10000000
+					if GPIO.input(26) == GPIO.HIGH: # crank
+						self.key_pos = 0b11000000
 				else:
-					self.vcu_frame[5] = 0b10000100
+					self.key_pos = 0b01000000
+				self.vcu_frame[5] = 0b00000100 | self.key_pos
 				# Torque
 				if GPIO.input(19) == GPIO.HIGH:
-					self.vcu_frame[0] = 0x11
+					self.vcu_frame[0] = 0b00100000
 				else:
 					self.vcu_frame[0] = 0
-				# Rolling counter
+				# Rolling counter (4 bit)
 				self.vcu_frame[6] = self.vcu_frame[6] + 1
 				if self.vcu_frame[6] > 0xf:
 					self.vcu_frame[6] = 0
+				self.vcu2_frame[6] = self.vcu2_frame[6] + 1
+				if self.vcu2_frame[6] > 0xf:
+					self.vcu2_frame[6] = 0
 				# Check sum (8 bit)
 				self.vcu_frame[7] = (sum(self.vcu_frame[:7]) ^ 0xff) & 0xff
+				self.vcu2_frame[7] = (sum(self.vcu2_frame[:7]) ^ 0xff) & 0xff
 				# Send message
 				try:
 					vcu_msg = can.Message(arbitration_id=0x101,
@@ -194,15 +229,31 @@ class MCUTestGUI(tk.Frame):
 					self.update_stream(vcu_msg)
 				except can.CanError as e:
 					print('Message send error: {}'.format(e))
-				'''# Send hand brake message
+				self.send_time = time.time()
+				# Send other VCU and hand brake messages
 				try:
+					vcu2 = can.Message(arbitration_id=0x102, data=self.vcu2_frame, extended_id=False)
+					self.__can0.send(vcu2)
+					self.log_can_msg(vcu2)
+					self.update_stream(vcu2)
 					hand_brake_msg = can.Message(arbitration_id=0x431, data=[0,0,0,0,0,0,0,0], extended_id=False)
 					self.__can0.send(hand_brake_msg)
-					self.log_can_msg(hand_brake_msg))
-					self.update_stream(hand_brake_msg)
+					self.log_can_msg(hand_brake_msg)
+					#self.update_stream(hand_brake_msg)
+					vcu3 = can.Message(arbitration_id=0x103, data=[0,0,0,0,0,0,0,0], extended_id=False)
+					self.__can0.send(vcu3)
+					self.log_can_msg(vcu3)
+					#self.update_stream(vcu3)
+					vcu4 = can.Message(arbitration_id=0x104, data=[0,0,0,0,0,0,0,0], extended_id=False)
+					self.__can0.send(vcu4)
+					self.log_can_msg(vcu4)
+					#self.update_stream(vcu4)
+					vcu6 = can.Message(arbitration_id=0x410, data=[0,0,0,0,0,0,0,0], extended_id=False)
+					self.__can0.send(vcu6)
+					self.log_can_msg(vcu6)
+					#self.update_stream(vcu6)
 				except can.CanError as e:
-					print('Message send error: {}'.format(e))'''
-				self.send_time = time.time()
+					print('Message send error: {}'.format(e))
 
 	def update_stream(self, msg):
 		# Update message frames on GUI
