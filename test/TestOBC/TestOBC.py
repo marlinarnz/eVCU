@@ -4,7 +4,7 @@ import can
 import binascii
 
 # Init CAN
-os.system('sudo ip link set can0 type can bitrate 500000')
+os.system('sudo ip link set can0 type can bitrate 250000')
 os.system('sudo ifconfig can0 up')
 
 # Bind socket
@@ -13,6 +13,16 @@ can0 = can.interface.Bus(channel='can0', bustype='socketcan_ctypes')
 # Start the logger
 logfile = open('logOBC.log', 'w')
 logger = can.CanutilsLogWriter(logfile, channel='can0')
+
+# Send BMS message
+def send():
+	frame = [0x0D, 0xAC, 0, 0x32, 0, 0, 0, 0]
+	try:
+		msg = can.Message(arbitration_id=0x1806E5F4, data=frame, extended_id=True)
+		can0.send(msg)
+		print(msg)
+	except can.CanError:
+		print('Message not sent')
 
 # Listen for a while
 print('Listen to the OBC...')
@@ -24,23 +34,8 @@ while time.time() - t0 < 60:
 		print(obc_msg)
 	else:
 		print('No messages')
+	send()
 
-'''
-# Create message BMS1
-frame = [0, 0, 0, 0, 0, 0, 0, 0]
-def get_msg(frame):
-	return can.Message(arbitration_id=0x520, data=frame, extended_id=False)
-frame[4] = 1 # set charger off
-
-try:
-	print('Send message...')
-	msg = get_msg(frame)
-	can0.send(msg)
-	print(msg)
-	print(can0.channel_info)
-except can.CanError:
-	print('Message not sent')
-'''
 
 # Terminate the bus
 logfile.close()

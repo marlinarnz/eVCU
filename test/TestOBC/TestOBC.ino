@@ -27,6 +27,12 @@ CanMessage msgs[N_MSG];
 // Instantiate messages which the OBC reacts to
 CanMessage msgToOBC(BMS1, &CAN, BMS1_INTERVAL);
 
+// Interrupt handler
+bool interrupt = false;
+void irqHandler() {
+  interrupt = true;
+}
+
 
 // Print a CAN message
 void printMessage(uint32_t id, uint8_t len, uint8_t *frame) {
@@ -113,7 +119,7 @@ void setup() {
   pinMode(PIN_POTI_1, INPUT);
   pinMode(PIN_POTI_2, INPUT);
 
-  Serial.begin(9600);
+  Serial.begin(115200);
   SPI.begin();
 
   // Fill the messages array
@@ -133,6 +139,9 @@ void setup() {
     BMS1_OBC_CurrentSet_LEN,
     5,
     BMS1_OBC_CurrentSet_CONV_D);
+
+  // Init the interrupt handler
+  attachInterrupt(0, irqHandler, FALLING);
 	
 	// Start the CAN bus communication
 	Serial.println("Starting the MCP2515");
@@ -144,32 +153,38 @@ void setup() {
 	
 // Check the bus in an infinite loop
 void loop() {
-  if (CAN.checkReceive()) {
-    //Serial.print("Message received: ");
-    MCP2515::ERROR err = CAN.readMessage(MCP2515::RXB1, &frame);
-    if (err != MCP2515::ERROR_NOMSG && err != MCP2515::ERROR_OK) {
-      Serial.println("CAN bus error: " + String(err));
-      delay(400);
-    }
+  if (interrupt) {//CAN.checkReceive()) {
+    interrupt = false;
+    uint8_t irq = CAN.getInterrupts();
+    if (irq & MCP2515::CANINTF_RX1IF) {
     
-  	if(MCP2515::ERROR_OK == err) {
-      //Serial.println(String(frame.can_id, HEX));
-      //printMessage(frame.can_id, frame.can_dlc, frame.data);
-  		// Print if something new appears
-  		for(int msg=0; msg<N_MSG; msg++) {
-  			if(msgs[msg].getId()==frame.can_id) {
-  				for(int i=0; i<min(frame.can_dlc, LSCF); i++) {
-  					if(msgs[msg].readByte(i)!=frame.data[i]) {
-              printMessage(frame.can_id, frame.can_dlc, frame.data);
-  				    // Update the msgs array
-  						for(int j=0; j<frame.can_dlc; j++) {
-  							msgs[msg].writeByte(j, frame.data[j]);
-  						}
-  					}
-  				}
-  			}
-  		}
-  	}
+      Serial.print("Message received: ");
+      MCP2515::ERROR err = CAN.readMessage(MCP2515::RXB1, &frame);
+      
+      if (err != MCP2515::ERROR_NOMSG && err != MCP2515::ERROR_OK) {
+        Serial.println("CAN bus error: " + String(err));
+        delay(400);
+      }
+      
+    	if(MCP2515::ERROR_OK == err) {
+        Serial.println(String(frame.can_id, HEX));
+        //printMessage(frame.can_id, frame.can_dlc, frame.data);
+    		// Print if something new appears
+    		/*for(int msg=0; msg<N_MSG; msg++) {
+    			if(msgs[msg].getId()==frame.can_id) {
+    				for(int i=0; i<min(frame.can_dlc, LSCF); i++) {
+    					if(msgs[msg].readByte(i)!=frame.data[i]) {
+                printMessage(frame.can_id, frame.can_dlc, frame.data);
+    				    // Update the msgs array
+    						for(int j=0; j<frame.can_dlc; j++) {
+    							msgs[msg].writeByte(j, frame.data[j]);
+    						}
+    					}
+    				}
+    			}
+    		}*/
+    	}
+    }
   }
 	
 	// Update BMS signal
@@ -189,4 +204,9 @@ void loop() {
 	
 	// Write and send the BMS signal
 	msgToOBC.send();
+  uint8_t data[8];
+  for(int i=0; i<8; i++) {
+    data[i] = {(uint8_t)(msgToOBC.readByte(i))};
+  }
+  //printMessage(msgToOBC.getId(), 8, data);
 }
