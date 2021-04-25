@@ -158,7 +158,10 @@ def decode_log():
 	with open('logMCU.log', 'r') as f:
 		with open('logMCU_decoded.log', 'w') as f_d:
 			for l in f:
-				f_d.write(d.decode_log_line(l) + '\n')
+				try:
+					f_d.write(d.decode_log_line(l) + '\n')
+				except:
+					pass
 
 if __name__ == "__main__":
-    test()
+    decode_log()

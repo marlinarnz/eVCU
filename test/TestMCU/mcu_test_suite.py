@@ -56,19 +56,17 @@ class MCUTestGUI(tk.Frame):
 		def ss():
 			if self.__on:
 				self.stop()
-				self.__on = False
 			else:
 				try:
 					self.start()
-					self.__on = True
 				except Exception as e:
 					print(e)
 					self.stop()
 		self.__button_run = tk.Button(self.__top, text='Start/Stop Comm', command=ss)
 		self.__button_run.grid(row=1, column=1, columnspan=3)
 		
-		# Add a HV connect button
 		self.__running = False
+		'''# Add a HV connect button
 		def hv():
 			if self.__on and not self.__running:
 				self.connect_hv()
@@ -77,10 +75,10 @@ class MCUTestGUI(tk.Frame):
                                 self.disconnect_hv()
                                 self.__running = False
 		self.__button_hv = tk.Button(self.__top, text='HV/Motor start/stop', command=hv)
-		self.__button_hv.grid(row=1, column=5, columnspan=3)
+		self.__button_hv.grid(row=1, column=5, columnspan=3)'''
 
 		# Add message streams
-		messages = [0x101, 0x102, 0x105, 0x106, 0x107]
+		messages = [0x101, 0x105, 0x106, 0x107]
 		self.__streams = {hex(id): tk.StringVar() for id in messages}
 		width = int((grid_frame-0)/len(messages))
 		self.__stream_labels = {id: tk.Label(self.__top, text=str(id)).grid(
@@ -96,18 +94,32 @@ class MCUTestGUI(tk.Frame):
 	def run(self):
 		# Run the GUI
 		while True:
+			self.loop()
+
+	def loop(self):
+		try:
 			self.__top.update_idletasks()
 			self.__top.update()
 			self.read()
 			self.write()
+			# Key switches start or stop the motor
+			if not self.__running and GPIO.input(13) == GPIO.HIGH:
+				self.connect_hv()
+			elif self.__running and GPIO.input(13) == GPIO.LOW:
+				self.disconnect_hv()
+		except:
+			if self.__on:
+				print('An error occured')
+				self.stop()
 
 	def log_can_msg(self, msg):
 		# Log the CAN bus message
 		if self.log:
 			self.logger.on_message_received(msg)
-#                            self.decoder.decode_message(str(msg)))
+			#self.decoder.decode_message(str(msg)))
 
 	def start(self):
+		self.__on = True
 		# Init CAN
 		os.system('sudo ip link set can0 type can bitrate 500000')
 		os.system('sudo ifconfig can0 up')
@@ -128,11 +140,19 @@ class MCUTestGUI(tk.Frame):
 			0x0,
 			0x0]
 		self.vcu2_frame = [0, # Pedal position / 0.392
-                        0, # Status signals
+			0, # Status signals
 			0, # Speed Req
 			0, # Regen, status signals
 			0,# AC power limit
 			0b00100001, # Max torque / 0.392
+			0x0,
+			0x0]
+		self.bms_frame = [0, # Warning level, status, relays
+			192, # SOC / 0.5, irrelevant
+			198, # SOH / 0.5, irrelevant
+			0b01000000, # Precharge status off, power on
+			0,
+			0,
 			0x0,
 			0x0]
 		print('Switched CAN bus on')
@@ -140,6 +160,7 @@ class MCUTestGUI(tk.Frame):
 		print('Switched APEV528 on')
 
 	def stop(self):
+		self.__on = False
 		# Switch off everything
 		self.key_pos = 0b00000000
 		print('Switched key position off')
@@ -156,26 +177,30 @@ class MCUTestGUI(tk.Frame):
 		if self.log: self.logfile.close()
 
 	def connect_hv(self):
-		self.key_pos = 0b10000000
-		print('Switched key position on')
+		self.__running = True
+		#self.key_pos = 0b10000000
+		#print('Switched key position on')
 		# Switch relays
 		start = time.time()
 		GPIO.output(3, False)
+		self.bms_frame[3] = 0b01000100
 		print('Switched precharge on')
 		# Wait for precharge
 		while time.time() - start < 0.5:
-			pass
+			self.loop()
 		GPIO.output(3, True)
 		GPIO.output(4, False)
+		self.bms_frame[3] = 0b01010000
 		print('Switched HV on')
 		self.gear_pos = 0b00110000
 		print('Switched gear lever to drive')
 
 	def disconnect_hv(self):
+		self.__running = False
 		self.gear_pos = 0b01000000
 		print('Switched gear lever to park')
-		self.key_pos = 0b01000000
-		print('Switched key position Acc')
+		#self.key_pos = 0b01000000
+		#print('Switched key position Acc')
 		# Switch relays
 		GPIO.output(3, True)
 		GPIO.output(4, True)
@@ -198,15 +223,16 @@ class MCUTestGUI(tk.Frame):
 				# Gear position (and vehicle state)
 				self.vcu_frame[4] = 0b00001001 | self.gear_pos
 				# Key position
-				if GPIO.input(13) == GPIO.HIGH: # acc/on
-					self.key_pos = 0b10000000
-					if GPIO.input(26) == GPIO.HIGH: # crank
-						self.key_pos = 0b11000000
+				if self.__running:
+					if GPIO.input(26) == GPIO.HIGH:
+						self.key_pos = 0b11000000 # crank
+					else:
+						self.key_pos = 0b10000000 # on
 				else:
-					self.key_pos = 0b01000000
+					self.key_pos = 0b01000000 # acc
 				self.vcu_frame[5] = 0b00000100 | self.key_pos
 				# Torque
-				if GPIO.input(19) == GPIO.HIGH:
+				if GPIO.input(19) == GPIO.HIGH and self.key_pos == 0b10000000:
 					self.vcu_frame[0] = 0b00100000
 				else:
 					self.vcu_frame[0] = 0
@@ -217,9 +243,13 @@ class MCUTestGUI(tk.Frame):
 				self.vcu2_frame[6] = self.vcu2_frame[6] + 1
 				if self.vcu2_frame[6] > 0xf:
 					self.vcu2_frame[6] = 0
+				self.bms_frame[6] = self.bms_frame[6] + 1
+				if self.bms_frame[6] > 0xf:
+					self.bms_frame[6] = 0
 				# Check sum (8 bit)
 				self.vcu_frame[7] = (sum(self.vcu_frame[:7]) ^ 0xff) & 0xff
 				self.vcu2_frame[7] = (sum(self.vcu2_frame[:7]) ^ 0xff) & 0xff
+				self.bms_frame[7] = (sum(self.bms_frame[:7]) ^ 0xff) & 0xff
 				# Send message
 				try:
 					vcu_msg = can.Message(arbitration_id=0x101,
@@ -230,28 +260,27 @@ class MCUTestGUI(tk.Frame):
 				except can.CanError as e:
 					print('Message send error: {}'.format(e))
 				self.send_time = time.time()
-				# Send other VCU and hand brake messages
+				# Send other messages
 				try:
-					vcu2 = can.Message(arbitration_id=0x102, data=self.vcu2_frame, extended_id=False)
-					self.__can0.send(vcu2)
-					self.log_can_msg(vcu2)
-					self.update_stream(vcu2)
 					hand_brake_msg = can.Message(arbitration_id=0x431, data=[0,0,0,0,0,0,0,0], extended_id=False)
 					self.__can0.send(hand_brake_msg)
 					self.log_can_msg(hand_brake_msg)
-					#self.update_stream(hand_brake_msg)
+					bms = can.Message(arbitration_id=0x1A0, data=self.bms_frame, extended_id=False)
+					self.__can0.send(bms)
+					self.log_can_msg(bms)
+					'''vcu2 = can.Message(arbitration_id=0x102, data=self.vcu2_frame, extended_id=False)
+					self.__can0.send(vcu2)
+					self.log_can_msg(vcu2)
+					self.update_stream(vcu2)
 					vcu3 = can.Message(arbitration_id=0x103, data=[0,0,0,0,0,0,0,0], extended_id=False)
 					self.__can0.send(vcu3)
 					self.log_can_msg(vcu3)
-					#self.update_stream(vcu3)
 					vcu4 = can.Message(arbitration_id=0x104, data=[0,0,0,0,0,0,0,0], extended_id=False)
 					self.__can0.send(vcu4)
 					self.log_can_msg(vcu4)
-					#self.update_stream(vcu4)
 					vcu6 = can.Message(arbitration_id=0x410, data=[0,0,0,0,0,0,0,0], extended_id=False)
 					self.__can0.send(vcu6)
-					self.log_can_msg(vcu6)
-					#self.update_stream(vcu6)
+					self.log_can_msg(vcu6)'''
 				except can.CanError as e:
 					print('Message send error: {}'.format(e))
 
