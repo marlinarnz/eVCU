@@ -132,19 +132,11 @@ class MCUTestGUI(tk.Frame):
 			self.logger = can.CanutilsLogWriter(self.logfile, channel='can0')
 
 		self.vcu_frame = [0, # Torque Req / 0.392
-			0, # Speed Req
+			0, # Speed Req / 0.25
 			0, # continued
 			0b00100000,# Change gear and authentication, irrelevant for MCU
 			0b00001001, # with gear D: 0b00110000, R: 0b00010000
-			0b10000100, # key pos., motor mode, warning level
-			0x0,
-			0x0]
-		self.vcu2_frame = [0, # Pedal position / 0.392
-			0, # Status signals
-			0, # Speed Req
-			0, # Regen, status signals
-			0,# AC power limit
-			0b00100001, # Max torque / 0.392
+			0b10000100, # key pos., motor mode (bit1), warning level
 			0x0,
 			0x0]
 		self.bms_frame = [0, # Warning level, status, relays
@@ -221,7 +213,7 @@ class MCUTestGUI(tk.Frame):
 		if self.__on:
 			if time.time() - self.send_time >= 0.02:
 				# Gear position (and vehicle state)
-				self.vcu_frame[4] = 0b00001001 | self.gear_pos
+				self.vcu_frame[4] = self.vcu_frame[4] | self.gear_pos
 				# Key position
 				if self.__running:
 					if GPIO.input(26) == GPIO.HIGH:
@@ -231,7 +223,7 @@ class MCUTestGUI(tk.Frame):
 				else:
 					self.key_pos = 0b01000000 # acc
 				self.vcu_frame[5] = 0b00000100 | self.key_pos
-				# Torque
+				# Torque/speed
 				if GPIO.input(19) == GPIO.HIGH and self.key_pos == 0b10000000:
 					self.vcu_frame[0] = 0b00100000
 				else:
@@ -240,15 +232,11 @@ class MCUTestGUI(tk.Frame):
 				self.vcu_frame[6] = self.vcu_frame[6] + 1
 				if self.vcu_frame[6] > 0xf:
 					self.vcu_frame[6] = 0
-				self.vcu2_frame[6] = self.vcu2_frame[6] + 1
-				if self.vcu2_frame[6] > 0xf:
-					self.vcu2_frame[6] = 0
 				self.bms_frame[6] = self.bms_frame[6] + 1
 				if self.bms_frame[6] > 0xf:
 					self.bms_frame[6] = 0
 				# Check sum (8 bit)
 				self.vcu_frame[7] = (sum(self.vcu_frame[:7]) ^ 0xff) & 0xff
-				self.vcu2_frame[7] = (sum(self.vcu2_frame[:7]) ^ 0xff) & 0xff
 				self.bms_frame[7] = (sum(self.bms_frame[:7]) ^ 0xff) & 0xff
 				# Send message
 				try:
@@ -268,19 +256,6 @@ class MCUTestGUI(tk.Frame):
 					bms = can.Message(arbitration_id=0x1A0, data=self.bms_frame, extended_id=False)
 					self.__can0.send(bms)
 					self.log_can_msg(bms)
-					'''vcu2 = can.Message(arbitration_id=0x102, data=self.vcu2_frame, extended_id=False)
-					self.__can0.send(vcu2)
-					self.log_can_msg(vcu2)
-					self.update_stream(vcu2)
-					vcu3 = can.Message(arbitration_id=0x103, data=[0,0,0,0,0,0,0,0], extended_id=False)
-					self.__can0.send(vcu3)
-					self.log_can_msg(vcu3)
-					vcu4 = can.Message(arbitration_id=0x104, data=[0,0,0,0,0,0,0,0], extended_id=False)
-					self.__can0.send(vcu4)
-					self.log_can_msg(vcu4)
-					vcu6 = can.Message(arbitration_id=0x410, data=[0,0,0,0,0,0,0,0], extended_id=False)
-					self.__can0.send(vcu6)
-					self.log_can_msg(vcu6)'''
 				except can.CanError as e:
 					print('Message send error: {}'.format(e))
 
