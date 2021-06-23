@@ -201,12 +201,10 @@ class MCUTestGUI(tk.Frame):
 	def read(self):
 		# Read the CAN bus
 		if self.__on:
-			msg = self.__can0.recv(1)
-			if msg is not None:
-				self.log_can_msg(msg)
-				self.update_stream(msg)
-			else:
-				pass
+			for msg in self.__can0:
+				if msg is not None:
+					self.log_can_msg(msg)
+					self.update_stream(msg)
 
 	def write(self):
 		# Write the VCU message on the bus
@@ -250,17 +248,19 @@ class MCUTestGUI(tk.Frame):
 				self.send_time = time.time()
 				# Send other messages
 				try:
-					hand_brake_msg = can.Message(arbitration_id=0x431, data=[0,0,0,0,0,0,0,0], extended_id=False)
+					hand_brake_msg = can.Message(arbitration_id=0x431,
+						data=[0,0,0,0,0,0,0,0], extended_id=False)
 					self.__can0.send(hand_brake_msg)
 					self.log_can_msg(hand_brake_msg)
-					bms = can.Message(arbitration_id=0x1A0, data=self.bms_frame, extended_id=False)
+					bms = can.Message(arbitration_id=0x1A0,
+						data=self.bms_frame, extended_id=False)
 					self.__can0.send(bms)
 					self.log_can_msg(bms)
 				except can.CanError as e:
 					print('Message send error: {}'.format(e))
 
 	def update_stream(self, msg):
-		# Update message frames on GUI
+		# Update message frames on GUI and console
 		print(msg)
 		try:
 			msg = self.decoder.decode_message(str(msg), keep_time=None, sep='\n')
