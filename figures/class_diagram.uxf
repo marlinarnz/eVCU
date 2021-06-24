@@ -1,0 +1,675 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="14.3.0">
+  <zoom_level>7</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>14</x>
+      <y>189</y>
+      <w>147</w>
+      <h>154</h>
+    </coordinates>
+    <panel_attributes>*Vehicle*
+--
+- charge: ChargeManager
+- drive: DriveManager
+- switch: PowerSwitch
+- gui: MonitorGUI
+- status: STATUS
+--
+- updateEEPROM(): void
+- updateStatusLight(): void
++ updateManagers(): void
++ updateInterfaces(): void
++ initDrive(): void
++ initCharge(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>469</x>
+      <y>42</y>
+      <w>147</w>
+      <h>98</h>
+    </coordinates>
+    <panel_attributes>*/Device/*
+--
+/- status: STATUS/
+--
+/- setStatus(STATUS): void/
+/+ getStatus(): STATUS/
+/+ begin(): void/
+/+ update(): void/
+/+ end(): void/</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>602</x>
+      <y>175</y>
+      <w>126</w>
+      <h>56</h>
+    </coordinates>
+    <panel_attributes>*/CanDevice/*
+--
+/- nMsgs: uint8_t/
+/- msgs: CanMessage/
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>210</x>
+      <y>210</y>
+      <w>147</w>
+      <h>154</h>
+    </coordinates>
+    <panel_attributes>*DriveManager*
+--
+- pins...
+- mcu: MCU
+- bms: BMS
+- throttle: ThrottleBreak
+- relays: HVRelays
+- pbrake: ParkBrake
+- cool: CoolingCycle
+--
+- updateTempGauge(): void
+- updateBrakeLight(): void
+- updateMotorFaultLight(): void
+- updateBatteryFaultLight(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>154</x>
+      <y>224</y>
+      <w>70</w>
+      <h>28</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>80.0;10.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>14</x>
+      <y>539</y>
+      <w>147</w>
+      <h>56</h>
+    </coordinates>
+    <panel_attributes>*PowerSwitch (CanDevice)*
+--
+- pinAccCrank: const uint8_t
+- pinOnOff: const uint8_t
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>35</x>
+      <y>413</y>
+      <w>147</w>
+      <h>112</h>
+    </coordinates>
+    <panel_attributes>*MonitorGUI (CanDevice)*
+--
+- logLevel: LOG_LVL
+- activeLogs: uint8_t
+--
++ setLogLevel(LOG_LVL): void
++ isUpdate(): bool
++ getSettings(): CanMessage
++ addLog(LOG_ID, uint8_t): void
++ delLog(LOG_ID, uint8_t): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>441</x>
+      <y>210</y>
+      <w>147</w>
+      <h>161</h>
+    </coordinates>
+    <panel_attributes>*ChargeManager*
+--
+- pins...
+- obc: OBC
+- bms: BMS
+- solar: SolarInverter
+- dc: DCDC
+- ac: ACInverter
+--
+- updateFuelGauge(): void
+- updateBatteryFaultLight(): void
+- updateChargeStatus(): void
+- updateConversion(): void
+- manageBatteryTemp(): void
+- manageCharging(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>56</x>
+      <y>336</y>
+      <w>28</w>
+      <h>91</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>10.0;110.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>21</x>
+      <y>336</y>
+      <w>28</w>
+      <h>217</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>10.0;290.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>784</x>
+      <y>42</y>
+      <w>147</w>
+      <h>308</h>
+    </coordinates>
+    <panel_attributes>*CanMessage*
+--
+- bus: MCP2515
+- id: uint32_t
+- extended: bool
+- frame: uint8_t
+- dlc: uint8_t
+- sendInterval: uint32_t
+- recvInterval: uint32_t
+- lastSent: long
+- lastUpdate: long
+- errors: ERROR
+--
+- send(): ERROR
+- read(): ERROR
++ setInterval(int): void
++ getId(): uint32_t
++ isExtended(): bool
++ getDlc(): uint8_t
++ getInterval(): int
++ getLastSent(): long
++ getLastUpdate(): long
++ getErrorLog(): ERROR
++ readByte(uint8_t): uint8_t
++ readSignalBE(): uint32_t
++ readSignalLE(): uint32_t
++ writeByte(uint8_t): void
++ writeSignal(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>539</x>
+      <y>133</y>
+      <w>154</w>
+      <h>56</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;200.0;60.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>280</x>
+      <y>133</y>
+      <w>259</w>
+      <h>91</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>350.0;10.0;10.0;110.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>112</x>
+      <y>805</y>
+      <w>147</w>
+      <h>112</h>
+    </coordinates>
+    <panel_attributes>*ThrottleBreak (Device)*
+--
+- pinThrottle: const uint8_t
+- pinBrake: const uint8_t
+- torqueReq: float
+- brakeReq: float
+--
+- readTorqueReq(): float
+- readBrakeReq(): float
++ getTorqueReq(): float
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>133</x>
+      <y>693</y>
+      <w>147</w>
+      <h>98</h>
+    </coordinates>
+    <panel_attributes>*MCU (CanDevice)*
+--
+--
++ setTorque(): float
++ getTemp(): float
++ getTorque(): float
++ getRPM(): long</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>546</x>
+      <y>455</y>
+      <w>147</w>
+      <h>154</h>
+    </coordinates>
+    <panel_attributes>*OBC (CanDevice)*
+--
+--
++ getInVolt(): float
++ getInCurrent(): float
++ getCcVal(): int
++ getCpVal(): int
++ getTemp(): float
++ setOutVolt(float): void
++ setOutCurrent(float): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>350</x>
+      <y>637</y>
+      <w>147</w>
+      <h>119</h>
+    </coordinates>
+    <panel_attributes>*BMS (CanDevice)*
+--
+--
++ getPackVoltage(): float
++ getOutCurrent(): float
++ getTemp(): float</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>252</x>
+      <y>532</y>
+      <w>147</w>
+      <h>56</h>
+    </coordinates>
+    <panel_attributes>*HVRelays (CanDevice)*
+--
+- pinMain: const uint8_t
+- pinAux: const uint8_t
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>518</x>
+      <y>630</y>
+      <w>147</w>
+      <h>126</h>
+    </coordinates>
+    <panel_attributes>*SolarInverter (CanDevice)*
+--
+--
++ getInVolt(): float
++ getInCurrent(): float
++ getOutVolt(): float
++ getOutCurrent(): float
++ setOutVolt(float): void
++ setOutCurrent(float): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>511</x>
+      <y>133</y>
+      <w>42</w>
+      <h>91</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>40.0;10.0;10.0;110.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>112</x>
+      <y>357</y>
+      <w>126</w>
+      <h>462</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>10.0;640.0;10.0;350.0;150.0;350.0;150.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>133</x>
+      <y>357</y>
+      <w>119</w>
+      <h>350</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>10.0;480.0;10.0;370.0;140.0;370.0;140.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>273</x>
+      <y>357</y>
+      <w>28</w>
+      <h>112</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>10.0;140.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>252</x>
+      <y>357</y>
+      <w>28</w>
+      <h>189</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>10.0;250.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>287</x>
+      <y>357</y>
+      <w>196</w>
+      <h>294</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>250.0;400.0;250.0;50.0;10.0;50.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>154</x>
+      <y>182</y>
+      <w>301</w>
+      <h>56</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>410.0;50.0;380.0;50.0;380.0;10.0;50.0;10.0;50.0;40.0;10.0;40.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>735</x>
+      <y>518</y>
+      <w>147</w>
+      <h>77</h>
+    </coordinates>
+    <panel_attributes>*DCDC (Device)*
+--
+- pinVolt: const uint8_t
+- batteryVoltage:float
+--
+- readVoltage(): float
++ getVoltage(): float</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>175</x>
+      <y>637</y>
+      <w>147</w>
+      <h>42</h>
+    </coordinates>
+    <panel_attributes>*ParkBrake (CanDevice)*
+--
+- pinBrake: const uint8_t
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>280</x>
+      <y>0</y>
+      <w>147</w>
+      <h>140</h>
+    </coordinates>
+    <panel_attributes>*/Manager/*
+--
+/- bus: MCP2515/
+/- busSpeed: CAN_SPEED/
+/- busFreq: CAN_CLOCK/
+/- act: Activity/
+/- msgs: CanMessage/
+--
+/+ setActivity(): Activity/
+/+ getCanStatus(): STATUS/
+/+ getBusStatus(): STATUS/
+/+ getActivity(): Activity/
+/+ resetBus(): void/</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>273</x>
+      <y>133</y>
+      <w>84</w>
+      <h>91</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>100.0;10.0;10.0;110.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>350</x>
+      <y>133</y>
+      <w>175</w>
+      <h>91</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;230.0;110.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>749</x>
+      <y>434</y>
+      <w>147</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>*BatteryHeater (Device)*
+--
+- pinTemp: const uint8_t
+- temp: float
+--
+- readTemp(): float
++ getTemp(): float</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>273</x>
+      <y>455</y>
+      <w>147</w>
+      <h>56</h>
+    </coordinates>
+    <panel_attributes>*CoolingCycle (Device)*
+--
+- pinTemp: const uint8_t
+- temp: float
+--
++ getTemp(): float</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>420</x>
+      <y>14</y>
+      <w>378</w>
+      <h>56</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-&gt;
+m1=1
+m2=0..n</panel_attributes>
+    <additional_attributes>10.0;10.0;430.0;10.0;430.0;50.0;520.0;50.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>721</x>
+      <y>56</y>
+      <w>77</w>
+      <h>161</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-&gt;
+m1=1
+m2=0..n</panel_attributes>
+    <additional_attributes>10.0;200.0;60.0;200.0;60.0;10.0;90.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>238</x>
+      <y>357</y>
+      <w>28</w>
+      <h>294</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>10.0;400.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLNote</id>
+    <coordinates>
+      <x>28</x>
+      <y>28</y>
+      <w>168</w>
+      <h>105</h>
+    </coordinates>
+    <panel_attributes>During initialisation, all CanDevices
+and all CanMessages are created off
+a stack. This enables multiple devices
+to write their signals in the same
+message. Thus, CanDevices need no
+own attributes but have access to
+their CanMessages. Only they know
+the lsb and len of their signals.
+
+bg=yellow</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>567</x>
+      <y>364</y>
+      <w>224</w>
+      <h>84</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>290.0;100.0;290.0;50.0;10.0;50.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>553</x>
+      <y>364</y>
+      <w>210</w>
+      <h>168</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>270.0;220.0;270.0;60.0;10.0;60.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>504</x>
+      <y>364</y>
+      <w>70</w>
+      <h>105</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>70.0;130.0;70.0;100.0;10.0;100.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>490</x>
+      <y>364</y>
+      <w>63</w>
+      <h>280</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>60.0;380.0;60.0;110.0;10.0;110.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>469</x>
+      <y>364</y>
+      <w>28</w>
+      <h>287</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-&gt;&gt;&gt;&gt;
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>10.0;390.0;10.0;10.0</additional_attributes>
+  </element>
+</diagram>
