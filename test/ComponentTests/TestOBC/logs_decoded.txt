@@ -1,0 +1,121 @@
+Matching log messages with possible decoding matrices
+
+-----------
+logOBC.txt:
+
+  BMS to OBC message(s):
+    0DAC003200000000 --> BMS_VoltageSet : 350.0; BMS_CurrentSet : 5.0; BMS_ChargeControl : 0.0
+
+  OBC_BMS_1:
+    18FFF4E5:
+    E6099E0F1202018C --> OBC_ChargerVoltage : 5888.9; OBC_ChargerCurrent : 4046.3; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 1.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 1.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -38.0; OBC_SoftVersion: 1.0; OBC_HardwareVersion: 140.0
+    18FEF4E5:
+    68103C0F01000000 --> OBC_ChargerVoltage : 2664.0; OBC_ChargerCurrent : 1537.5; OBC_HardwareStatus : 1.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 0.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -40.0; OBC_SoftVersion: 0.0; OBC_HardwareVersion: 0.0
+
+  OBC_BMS_2:
+    18FFF4E5:
+    E6099E0F1202018C --> OBC_ACVoltage_Input: 5888.9; OBC_PFCVoltage: 4046.3; OBC_CurrentLimit: 1.8; OBC_BatteryVoltage: 51.3; OBC_SystemStatus: 12.0; OBC_ErrorFlag: 8.0
+    18FEF4E5:
+    68103C0F01000000 --> OBC_ACVoltage_Input: 2664.0; OBC_PFCVoltage: 1537.5; OBC_CurrentLimit: 0.1; OBC_BatteryVoltage: 0.0; OBC_SystemStatus: 0.0; OBC_ErrorFlag: 0.0
+
+  OBC_BMS_3:
+    18FFF4E5:
+    E6099E0F1202018C --> OBC_ACCurrent_Input: 5888.9; OBC_ChargingPiletMaxCurr: 4046.3; OBC_ChargePortTemp1: 18.0; OBC_ChargePortTemp2: 2.0; OBC_CP Duty: 1.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 1.0; OBC_Low12VStatus: 1.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 4.0
+    18FEF4E5:
+    68103C0F01000000 --> OBC_ACCurrent_Input: 2664.0; OBC_ChargingPiletMaxCurr: 1537.5; OBC_ChargePortTemp1: 1.0; OBC_ChargePortTemp2: 0.0; OBC_CP Duty: 0.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 0.0; OBC_Low12VStatus: 0.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 0.0
+
+  TC:
+    18FFF4E5:
+    E6099E0F1202018C --> OBC_DCVoltage: 5888.9; OBC_DCCurrent: 4046.3; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 1.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+    18FEF4E5:
+    68103C0F01000000 --> OBC_DCVoltage: 2664.0; OBC_DCCurrent: 1537.5; OBC_HardwareStatus : 1.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+
+
+-----------
+
+logOBC_no_BMS.log:
+
+  OBC_BMS_1:
+    18FFF4E5:
+    C209A00F0000018C --> OBC_ChargerVoltage : 4967.3; OBC_ChargerCurrent : 4097.5; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 0.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -40.0; OBC_SoftVersion: 1.0; OBC_HardwareVersion: 140.0
+    C409A00F0000018C --> OBC_ChargerVoltage : 5018.5; OBC_ChargerCurrent : 4097.5; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 0.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -40.0; OBC_SoftVersion: 1.0; OBC_HardwareVersion: 140.0
+    C4099E0F0000018C --> OBC_ChargerVoltage : 5018.5; OBC_ChargerCurrent : 4046.3; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 0.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -40.0; OBC_SoftVersion: 1.0; OBC_HardwareVersion: 140.0
+    C4099E0F1202018C --> OBC_ChargerVoltage : 5018.5; OBC_ChargerCurrent : 4046.3; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 1.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 1.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -38.0; OBC_SoftVersion: 1.0; OBC_HardwareVersion: 140.0
+    C6099E0F1202018C --> OBC_ChargerVoltage : 5069.7; OBC_ChargerCurrent : 4046.3; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 1.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 1.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -38.0; OBC_SoftVersion: 1.0; OBC_HardwareVersion: 140.0
+    18FEF4E5:
+    68103C0F00000000 --> OBC_ChargerVoltage : 2664.0; OBC_ChargerCurrent : 1537.5; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 0.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -40.0; OBC_SoftVersion: 0.0; OBC_HardwareVersion: 0.0
+    68103C0F01000000 --> OBC_ChargerVoltage : 2664.0; OBC_ChargerCurrent : 1537.5; OBC_HardwareStatus : 1.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 0.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -40.0; OBC_SoftVersion: 0.0; OBC_HardwareVersion: 0.0
+
+  OBC_BMS_2:
+    18FFF4E5:
+    C209A00F0000018C --> OBC_ACVoltage_Input: 4967.3; OBC_PFCVoltage: 4097.5; OBC_CurrentLimit: 0.0; OBC_BatteryVoltage: 0.1; OBC_SystemStatus: 12.0; OBC_ErrorFlag: 8.0
+    C409A00F0000018C --> OBC_ACVoltage_Input: 5018.5; OBC_PFCVoltage: 4097.5; OBC_CurrentLimit: 0.0; OBC_BatteryVoltage: 0.1; OBC_SystemStatus: 12.0; OBC_ErrorFlag: 8.0
+    C4099E0F0000018C --> OBC_ACVoltage_Input: 5018.5; OBC_PFCVoltage: 4046.3; OBC_CurrentLimit: 0.0; OBC_BatteryVoltage: 0.1; OBC_SystemStatus: 12.0; OBC_ErrorFlag: 8.0
+    C4099E0F1202018C --> OBC_ACVoltage_Input: 5018.5; OBC_PFCVoltage: 4046.3; OBC_CurrentLimit: 1.8; OBC_BatteryVoltage: 51.3; OBC_SystemStatus: 12.0; OBC_ErrorFlag: 8.0
+    C6099E0F1202018C --> OBC_ACVoltage_Input: 5069.7; OBC_PFCVoltage: 4046.3; OBC_CurrentLimit: 1.8; OBC_BatteryVoltage: 51.3; OBC_SystemStatus: 12.0; OBC_ErrorFlag: 8.0
+    18FEF4E5:
+    68103C0F00000000 --> OBC_ACVoltage_Input: 2664.0; OBC_PFCVoltage: 1537.5; OBC_CurrentLimit: 0.0; OBC_BatteryVoltage: 0.0; OBC_SystemStatus: 0.0; OBC_ErrorFlag: 0.0
+    68103C0F01000000 --> OBC_ACVoltage_Input: 2664.0; OBC_PFCVoltage: 1537.5; OBC_CurrentLimit: 0.1; OBC_BatteryVoltage: 0.0; OBC_SystemStatus: 0.0; OBC_ErrorFlag: 0.0
+
+  OBC_BMS_3:
+    18FFF4E5:
+    C209A00F0000018C --> OBC_ACCurrent_Input: 4967.3; OBC_ChargingPiletMaxCurr: 4097.5; OBC_ChargePortTemp1: 0.0; OBC_ChargePortTemp2: 0.0; OBC_CP Duty: 1.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 1.0; OBC_Low12VStatus: 1.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 4.0
+    C409A00F0000018C --> OBC_ACCurrent_Input: 5018.5; OBC_ChargingPiletMaxCurr: 4097.5; OBC_ChargePortTemp1: 0.0; OBC_ChargePortTemp2: 0.0; OBC_CP Duty: 1.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 1.0; OBC_Low12VStatus: 1.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 4.0
+    C4099E0F0000018C --> OBC_ACCurrent_Input: 5018.5; OBC_ChargingPiletMaxCurr: 4046.3; OBC_ChargePortTemp1: 0.0; OBC_ChargePortTemp2: 0.0; OBC_CP Duty: 1.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 1.0; OBC_Low12VStatus: 1.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 4.0
+    C4099E0F1202018C --> OBC_ACCurrent_Input: 5018.5; OBC_ChargingPiletMaxCurr: 4046.3; OBC_ChargePortTemp1: 18.0; OBC_ChargePortTemp2: 2.0; OBC_CP Duty: 1.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 1.0; OBC_Low12VStatus: 1.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 4.0
+    C6099E0F1202018C --> OBC_ACCurrent_Input: 5069.7; OBC_ChargingPiletMaxCurr: 4046.3; OBC_ChargePortTemp1: 18.0; OBC_ChargePortTemp2: 2.0; OBC_CP Duty: 1.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 1.0; OBC_Low12VStatus: 1.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 4.0
+    18FEF4E5:
+    68103C0F00000000 --> OBC_ACCurrent_Input: 2664.0; OBC_ChargingPiletMaxCurr: 1537.5; OBC_ChargePortTemp1: 0.0; OBC_ChargePortTemp2: 0.0; OBC_CP Duty: 0.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 0.0; OBC_Low12VStatus: 0.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 0.0
+    68103C0F01000000 --> OBC_ACCurrent_Input: 2664.0; OBC_ChargingPiletMaxCurr: 1537.5; OBC_ChargePortTemp1: 1.0; OBC_ChargePortTemp2: 0.0; OBC_CP Duty: 0.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 0.0; OBC_Low12VStatus: 0.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 0.0
+
+  TC:
+    18FFF4E5:
+    C209A00F0000018C --> OBC_DCVoltage: 4967.3; OBC_DCCurrent: 4097.5; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+    C409A00F0000018C --> OBC_DCVoltage: 5018.5; OBC_DCCurrent: 4097.5; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+    C4099E0F0000018C --> OBC_DCVoltage: 5018.5; OBC_DCCurrent: 4046.3; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+    C4099E0F1202018C --> OBC_DCVoltage: 5018.5; OBC_DCCurrent: 4046.3; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 1.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+    C6099E0F1202018C --> OBC_DCVoltage: 5069.7; OBC_DCCurrent: 4046.3; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 1.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+    18FEF4E5:
+    68103C0F00000000 --> OBC_DCVoltage: 2664.0; OBC_DCCurrent: 1537.5; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+    68103C0F01000000 --> OBC_DCVoltage: 2664.0; OBC_DCCurrent: 1537.5; OBC_HardwareStatus : 1.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+
+
+-----------
+
+logOBC_no_battery_no_BMS.log:
+
+  OBC_BMS_1:
+    18FFF4E5:
+    0000A00F0000018C --> OBC_ChargerVoltage : 0.0; OBC_ChargerCurrent : 4097.5; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 0.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -40.0; OBC_SoftVersion: 1.0; OBC_HardwareVersion: 140.0
+    00009E0F0000018C --> OBC_ChargerVoltage : 0.0; OBC_ChargerCurrent : 4046.3; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 0.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -40.0; OBC_SoftVersion: 1.0; OBC_HardwareVersion: 140.0
+    00009E0F1202018C --> OBC_ChargerVoltage : 0.0; OBC_ChargerCurrent : 4046.3; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 1.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 1.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -38.0; OBC_SoftVersion: 1.0; OBC_HardwareVersion: 140.0
+    18FEF4E5:
+    68103C0F00000000 --> OBC_ChargerVoltage : 2664.0; OBC_ChargerCurrent : 1537.5; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0; OBC_ComOvertime : 0.0; OBC_BatteryConnectStatus: 0.0; OBC_CC Status: 0.0; OBC_CP Status: 0.0; OBC_Temperature : -40.0; OBC_SoftVersion: 0.0; OBC_HardwareVersion: 0.0
+
+  OBC_BMS_2:
+    18FFF4E5:
+    0000A00F0000018C --> OBC_ACVoltage_Input: 0.0; OBC_PFCVoltage: 4097.5; OBC_CurrentLimit: 0.0; OBC_BatteryVoltage: 0.1; OBC_SystemStatus: 12.0; OBC_ErrorFlag: 8.0
+    00009E0F0000018C --> OBC_ACVoltage_Input: 0.0; OBC_PFCVoltage: 4046.3; OBC_CurrentLimit: 0.0; OBC_BatteryVoltage: 0.1; OBC_SystemStatus: 12.0; OBC_ErrorFlag: 8.0
+    00009E0F1202018C --> OBC_ACVoltage_Input: 0.0; OBC_PFCVoltage: 4046.3; OBC_CurrentLimit: 1.8; OBC_BatteryVoltage: 51.3; OBC_SystemStatus: 12.0; OBC_ErrorFlag: 8.0
+    18FEF4E5:
+    68103C0F00000000 --> OBC_ACVoltage_Input: 2664.0; OBC_PFCVoltage: 1537.5; OBC_CurrentLimit: 0.0; OBC_BatteryVoltage: 0.0; OBC_SystemStatus: 0.0; OBC_ErrorFlag: 0.0
+
+  OBC_BMS_3:
+    18FFF4E5:
+    0000A00F0000018C --> OBC_ACCurrent_Input: 0.0; OBC_ChargingPiletMaxCurr: 4097.5; OBC_ChargePortTemp1: 0.0; OBC_ChargePortTemp2: 0.0; OBC_CP Duty: 1.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 1.0; OBC_Low12VStatus: 1.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 4.0
+    00009E0F0000018C --> OBC_ACCurrent_Input: 0.0; OBC_ChargingPiletMaxCurr: 4046.3; OBC_ChargePortTemp1: 0.0; OBC_ChargePortTemp2: 0.0; OBC_CP Duty: 1.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 1.0; OBC_Low12VStatus: 1.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 4.0
+    00009E0F1202018C --> OBC_ACCurrent_Input: 0.0; OBC_ChargingPiletMaxCurr: 4046.3; OBC_ChargePortTemp1: 18.0; OBC_ChargePortTemp2: 2.0; OBC_CP Duty: 1.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 1.0; OBC_Low12VStatus: 1.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 4.0
+    18FEF4E5:
+    68103C0F00000000 --> OBC_ACCurrent_Input: 2664.0; OBC_ChargingPiletMaxCurr: 1537.5; OBC_ChargePortTemp1: 0.0; OBC_ChargePortTemp2: 0.0; OBC_CP Duty: 0.0; BMS_LockCharge: 0.0; OBC_S2 STATUS: 0.0; OBC_BMS WakeStatus: 0.0; OBC_Low12VStatus: 0.0; OBC_OutRealyStatus: 0.0; OBC_CC Status: 0.0
+
+  TC:
+    18FFF4E5:
+    0000A00F0000018C --> OBC_DCVoltage: 0.0; OBC_DCCurrent: 4097.5; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+    00009E0F0000018C --> OBC_DCVoltage: 0.0; OBC_DCCurrent: 4046.3; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+    00009E0F1202018C --> OBC_DCVoltage: 0.0; OBC_DCCurrent: 4046.3; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 1.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+    18FEF4E5:
+    68103C0F00000000 --> OBC_DCVoltage: 2664.0; OBC_DCCurrent: 1537.5; OBC_HardwareStatus : 0.0; OBC_TempAnomaly : 0.0; OBC_ACVoltageAnomaly : 0.0; OBC_StartStatus: 0.0
+
+
+-----------
+
