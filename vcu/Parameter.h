@@ -13,9 +13,10 @@
 class Parameter
 {
 public:
-  Parameter(int id);
-  ~Parameter();
-  int getId();
+  AccessControl m_pMutex;
+  Parameter(int id) : m_pMutex(AccessControl()), m_id(id) {};
+  int getId() {return m_id;};
+
 private:
   int m_id;
 };
@@ -24,39 +25,34 @@ private:
 class ParameterBool : public Parameter
 {
 public:
-  ParameterBool(int id);
-  ~ParameterBool();
+  ParameterBool(int id) : Parameter(id), m_value(0) {};
   void setVal(bool val);
   bool getVal();
 private:
   bool m_value;
-  AccessControl* m_phMutex;
+  
 };
 
 
 class ParameterDouble : public Parameter
 {
 public:
-  ParameterDouble(int id);
-  ~ParameterDouble();
+  ParameterDouble(int id) : Parameter(id), m_value(0) {};
   void setVal(double val);
   double getVal();
 private:
   double m_value;
-  AccessControl* m_phMutex;
 };
 
 
 class ParameterInt : public Parameter
 {
 public:
-  ParameterInt(int id);
-  ~ParameterInt();
+  ParameterInt(int id) : Parameter(id), m_value(0) {};
   void setVal(int val);
   int getVal();
 private:
   int m_value;
-  AccessControl* m_phMutex;
 };
 
 #endif

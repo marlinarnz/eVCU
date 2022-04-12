@@ -7,10 +7,6 @@
 #define ACCESSCONTROL_H
 
 #include <Arduino.h>
-//#include <Arduino_FreeRTOS.h>
-//#include <semphr.h>
-//#include "freertos/FreeRTOS.h"
-//#include "freertos/semphr.h"
 
 class AccessControl
 {

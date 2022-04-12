@@ -1,4 +1,5 @@
 #include "VehicleController.h"
+#include "Device.h"
 
 
 bool VehicleController::registerParameter(Parameter* pParam)
@@ -32,10 +33,12 @@ bool VehicleController::setBooleanValue(Device* pCallingDevide, ParameterBool* p
     pParam->setVal(val);
     // Notify all Devices that have subscribed to this parameter
     SecuredLinkedList<Device*>* devList = m_map.getRegisteredDevices(pParam->getId());
-    for (int i=0; i<devList->size(); i++) {
-      devList->get(i)->notifyValueChanged(pParam);
+    if (devList) {
+      for (int i=0; i<devList->size(); i++) {
+        devList->get(i)->notifyValueChanged(pParam);
+      }
+      return true;
     }
-    return true;
   }
   return false;
 }
@@ -48,10 +51,12 @@ bool VehicleController::setDoubleValue(Device* pCallingDevide, ParameterDouble* 
     pParam->setVal(val);
     // Notify all Devices that have subscribed to this parameter
     SecuredLinkedList<Device*>* devList = m_map.getRegisteredDevices(pParam->getId());
-    for (int i=0; i<devList->size(); i++) {
-      devList->get(i)->notifyValueChanged(pParam);
+    if (devList) {
+      for (int i=0; i<devList->size(); i++) {
+        devList->get(i)->notifyValueChanged(pParam);
+      }
+      return true;
     }
-    return true;
   }
   return false;
 }
@@ -64,10 +69,12 @@ bool VehicleController::setIntegerValue(Device* pCallingDevide, ParameterInt* pP
     pParam->setVal(val);
     // Notify all Devices that have subscribed to this parameter
     SecuredLinkedList<Device*>* devList = m_map.getRegisteredDevices(pParam->getId());
-    for (int i=0; i<devList->size(); i++) {
-      devList->get(i)->notifyValueChanged(pParam);
+    if (devList) {
+      for (int i=0; i<devList->size(); i++) {
+        devList->get(i)->notifyValueChanged(pParam);
+      }
+      return true;
     }
-    return true;
   }
   return false;
 }

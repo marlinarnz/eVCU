@@ -7,10 +7,6 @@
 #define CUSTOM_QUEUE_H
 
 #include <Arduino.h>
-//#include <Arduino_FreeRTOS.h>
-//#include <queue.h>
-//#include "freertos/FreeRTOS.h"
-//#include "freertos/queue.h"
 #include "Constants.h"
 #include "AccessControl.h"
 #include "AccessLock.h"
@@ -20,14 +16,14 @@ class Parameter;
 class Queue
 {
 public:
-  Queue(size_t sizeOfElement);
+  Queue();
   ~Queue();
   bool empty();
   Parameter* pop();
   bool push(Parameter* pParam);
 
 private:
-  AccessControl* m_phMutex;
+  AccessControl m_mutex;
   QueueHandle_t m_handleQueue;
 };
 

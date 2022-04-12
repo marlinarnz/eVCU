@@ -31,77 +31,53 @@ void loop() {
 test(QueueTest, test_constructor) {
   // Create instances within a scope, which calls the destructor at the end
   if(true) {
-    Queue q(sizeof(&param1));
-  }
-  assertTrue(true);
-}
-
-test(QueueTest, test_constructor_paramDouble) {
-  // Create instances within a scope, which calls the destructor at the end
-  if(true) {
-    Queue q(sizeof(&paramDouble));
-  }
-  assertTrue(true);
-}
-
-test(QueueTest, test_constructor_paramInt) {
-  // Create instances within a scope, which calls the destructor at the end
-  if(true) {
-    Queue q(sizeof(&paramInt));
-  }
-  assertTrue(true);
-}
-
-test(QueueTest, test_constructor_paramBool) {
-  // Create instances within a scope, which calls the destructor at the end
-  if(true) {
-    Queue q(sizeof(&paramBool));
+    Queue q;
   }
   assertTrue(true);
 }
 
 test(QueueTest, test_empty_withItems) {
-  Queue q(sizeof(&param1));
+  Queue q;
   q.push(&param1);
   assertFalse(q.empty());
 }
 
 test(QueueTest, test_empty_withoutItems) {
-  Queue q(sizeof(&param1));
+  Queue q;
   assertTrue(q.empty());
 }
 
 test(QueueTest, test_pop_) {
-  Queue q(sizeof(&param1));
+  Queue q;
   q.push(&param1);
   assertEqual(&param1, q.pop());
 }
 
 test(QueueTest, test_pop_paramBool) {
-  Queue q(sizeof(&param1));
+  Queue q;
   q.push(&paramBool);
   assertEqual(&paramBool, q.pop());
 }
 
 test(QueueTest, test_pop_paramInt) {
-  Queue q(sizeof(&param1));
+  Queue q;
   q.push(&paramInt);
   assertEqual(&paramInt, q.pop());
 }
 
 test(QueueTest, test_pop_paramDouble) {
-  Queue q(sizeof(&param1));
+  Queue q;
   q.push(&paramDouble);
   assertEqual(&paramDouble, q.pop());
 }
 
 test(QueueTest, test_pop_withoutItems) {
-  Queue q(sizeof(&param1));
+  Queue q;
   assertEqual(NULL, q.pop());
 }
 
 test(QueueTest, test_pop_firstItem) {
-  Queue q(sizeof(&param1));
+  Queue q;
   Parameter param2(1);
   q.push(&param1);
   q.push(&param2);
@@ -109,7 +85,7 @@ test(QueueTest, test_pop_firstItem) {
 }
 
 test(QueueTest, test_pop_itemDeleted) {
-  Queue q(sizeof(&param1));
+  Queue q;
   Parameter param2(1);
   q.push(&param1);
   q.push(&param2);
@@ -119,27 +95,27 @@ test(QueueTest, test_pop_itemDeleted) {
 }
 
 test(QueueTest, test_push_) {
-  Queue q(sizeof(param1));
+  Queue q;
   assertTrue(q.push(&param1));
 }
 
 test(QueueTest, test_push_paramBool) {
-  Queue q(sizeof(param1));
+  Queue q;
   assertTrue(q.push(&paramBool));
 }
 
 test(QueueTest, test_push_paramInt) {
-  Queue q(sizeof(param1));
+  Queue q;
   assertTrue(q.push(&paramInt));
 }
 
 test(QueueTest, test_push_paramDouble) {
-  Queue q(sizeof(param1));
+  Queue q;
   assertTrue(q.push(&paramDouble));
 }
 
 test(QueueTest, test_push_queueFull) {
-  Queue q(sizeof(param1));
+  Queue q;
   // Fill queue
   for (int i=0; i<QUEUE_SIZE; i++) {
     assertTrue(q.push(&param1));

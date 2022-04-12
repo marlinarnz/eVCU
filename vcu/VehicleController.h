@@ -1,7 +1,7 @@
 /* ======================================================================
- * The vehicle controller coordinates parameter changes and subscriptions.
- * It starts devices (services) and shuts them down, but does not
- * orchestrate anything.
+ * The vehicle controller registers subscriptions of Devices to Parameter
+ * changes. It forwards these Parameter changes to the registered Devices
+ * but does not execute any further logic.
  */
 
 #ifndef VEHICLECONTROLLER_H
@@ -16,7 +16,7 @@ class Parameter;
 class VehicleController
 {
 public:
-	VehicleController() { m_map = MapParameterToDevices(); };
+	VehicleController() : m_map(MapParameterToDevices()) {};
 	~VehicleController() {};
   bool registerParameter(Parameter* pParam);
   bool registerForValueChanged(Device* pCallingDevide, int id);

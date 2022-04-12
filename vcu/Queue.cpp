@@ -1,10 +1,9 @@
 #include "Queue.h"
 
-Queue::Queue(size_t sizeOfElement)
-  : m_handleQueue(NULL), m_phMutex(NULL)
+Queue::Queue()
+  : m_handleQueue(NULL), m_mutex(AccessControl())
 {
-  m_phMutex = new AccessControl();
-  m_handleQueue = xQueueCreate(QUEUE_SIZE, sizeOfElement);
+  m_handleQueue = xQueueCreate(QUEUE_SIZE, 4);
   if (m_handleQueue==NULL) {
     if (DEBUG) {PRINT("Fatal: Queue generation failed")}
   }
@@ -13,7 +12,6 @@ Queue::Queue(size_t sizeOfElement)
 
 Queue::~Queue()
 {
-  delete m_phMutex;
   vQueueDelete(m_handleQueue);
   m_handleQueue = NULL;
 }
@@ -21,28 +19,28 @@ Queue::~Queue()
 
 bool Queue::empty()
 {
-  AccessLock lock(m_phMutex);
-  Parameter* element;
+  AccessLock lock(&m_mutex);
+  Parameter* pParam;
   // Don't wait, if the element is not immediately available
-  return !xQueuePeek(m_handleQueue, &element, (TickType_t)0);
+  return !xQueuePeek(m_handleQueue, &(pParam), (TickType_t)0);
 }
 
 
 Parameter* Queue::pop()
 {
-  AccessLock lock(m_phMutex);
-  Parameter* element = NULL;
+  AccessLock lock(&m_mutex);
+  Parameter* pParam = NULL;
   // Don't wait, if the element is not immediately available
-  xQueueReceive(m_handleQueue, &element, (TickType_t)0);
-  return element;
+  xQueueReceive(m_handleQueue, &(pParam), (TickType_t)0);
+  return pParam;
 }
 
 
 bool Queue::push(Parameter* pParam)
 {
-  AccessLock lock(m_phMutex);
+  AccessLock lock(&m_mutex);
   // Wait 10 ticks if the queue is already full
-  if (xQueueSend(m_handleQueue, &pParam, (TickType_t)10) != pdPASS) {
+  if (xQueueSend(m_handleQueue, (void*) &pParam, (TickType_t)10) != pdPASS) {
     return false;
   }
   return true;

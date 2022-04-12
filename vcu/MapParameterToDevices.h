@@ -1,20 +1,20 @@
 /* ======================================================================
  * This map-like class is based on the SecuredLinkedList by Steven Cybinski.
- * It is a list of elements, which contain one Parameter and a list of
- * Devices, which are registered for its changes. The element can be
- * identified by the Parameter's ID.
+ * It is a map of Parameter IDs and a list of Devices, which are registered
+ * for the Parameter's changes. This class does not execute any further 
+ * logic.
  */
 
 #ifndef MAPPARAMETERTODEVICES_H
 #define MAPPARAMETERTODEVICES_H
 
 #include <Arduino.h>
+#include "Constants.h"
 #include "Parameter.h"
 #include "SecuredLinkedList.h"
 #include "SecuredLinkedListMap.h"
-#include "Constants.h"
-#include "Device.h"
 
+class Device;
 
 class MapParameterToDevices : public SecuredLinkedListMap<int, SecuredLinkedList<Device*>*>
 {
