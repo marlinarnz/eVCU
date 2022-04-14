@@ -1,8 +1,3 @@
-/* ======================================================================
- * A Parameter can hold one value of the respective data type. It needs
- * a mutex that is called when the value is set or retrieved.
- */
-
 #ifndef PARAMETER_H
 #define PARAMETER_H
 
@@ -10,6 +5,11 @@
 #include "AccessControl.h"
 #include "AccessLock.h"
 
+
+/** A Parameter with unique integer ID and a value. 
+ *  It can hold one value of the respective data type. It instantiates
+ *  a mutex that gets blocked when the value is set or retrieved.
+ */
 class Parameter
 {
 public:

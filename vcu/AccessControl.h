@@ -1,13 +1,12 @@
-/* ======================================================================
- * An adapter for access controlling objects like semaphores. Can be
- * customised to the operating system used and other needs.
- */
-
 #ifndef ACCESSCONTROL_H
 #define ACCESSCONTROL_H
 
 #include <Arduino.h>
 
+
+/** An adapter for access controlling constructs like semaphores.
+ *  Can be customised to the operating system used and other needs.
+ */
 class AccessControl
 {
 public:

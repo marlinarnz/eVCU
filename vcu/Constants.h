@@ -1,6 +1,6 @@
-/* ======================================================================
- * Central location for saving microcontroller-specific constants such
- * as I/O pins.
+/** @file
+ *  Saves all config data.
+ *  A place for the pin layout, global settings, macros, and constants.
  */
 
 #ifndef CONSTANTS_H

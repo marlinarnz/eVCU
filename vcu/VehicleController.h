@@ -1,9 +1,3 @@
-/* ======================================================================
- * The vehicle controller registers subscriptions of Devices to Parameter
- * changes. It forwards these Parameter changes to the registered Devices
- * but does not execute any further logic.
- */
-
 #ifndef VEHICLECONTROLLER_H
 #define VEHICLECONTROLLER_H
 
@@ -13,6 +7,12 @@
 class Device;
 class Parameter;
 
+
+/** Manages communication between Devices.
+ *  The VehicleController registers subscriptions of Devices to Parameter
+ *  changes. It forwards these Parameter changes to the registered Devices
+ *  but does not execute any further logic.
+ */
 class VehicleController
 {
 public:

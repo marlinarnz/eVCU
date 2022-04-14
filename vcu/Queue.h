@@ -1,8 +1,3 @@
-/* ======================================================================
- * An adapter for queues. Can be customised to the operating system used
- * and other needs such as return type.
- */
-
 #ifndef CUSTOM_QUEUE_H
 #define CUSTOM_QUEUE_H
 
@@ -13,6 +8,11 @@
 
 class Parameter;
 
+
+/** An adapter for queues that contain Parameters as messages.
+ *  It is secured by a mutex. Can be customised to the operating
+ *  system.
+ */
 class Queue
 {
 public:

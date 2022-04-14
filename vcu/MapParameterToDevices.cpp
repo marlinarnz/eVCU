@@ -1,6 +1,12 @@
 #include "MapParameterToDevices.h"
 
 
+/** Registers a new Parameter in the map.
+ *  If the ID of the given Parameter has not been registered yet,
+ *  it gets a new entry with empty list of registered Devices.
+ *  @param pNewParam pointer to the new Parameter
+ *  @return boolean whether the Parameter was registered successfully or already exists
+ */
 bool MapParameterToDevices::addParameterToMap(Parameter* pNewParam)
 {
   // See whether the parameter is already registered and break in this case
@@ -18,6 +24,13 @@ bool MapParameterToDevices::addParameterToMap(Parameter* pNewParam)
 }
 
 
+/** Registers a Device for a Parameter.
+ *  If the Parameter ID to register for is present in the map,
+ *  the Device is registered in the notification list.
+ *  @param pCallingDevice pointer to the Device to register
+ *  @param id integer ID of the Parameter to register the Device for
+ *  @return boolean whether the Device was registered successfully
+ */
 bool MapParameterToDevices::registerForValueChanged(Device* pCallingDevice, int id)
 {
   // Find the given ID and add the device to its list
@@ -38,6 +51,13 @@ bool MapParameterToDevices::registerForValueChanged(Device* pCallingDevice, int 
 }
 
 
+/** Unregisters a Device for a Parameter.
+ *  If the Device was registered to this Parameter, it gets
+ *  unregistered from the notification list.
+ *  @param pCallingDevice pointer to the Device to unregister
+ *  @param id integer ID of the Parameter to unregister the Device from
+ *  @return boolean whether the Device was unregistered successfully
+ */
 bool MapParameterToDevices::unregisterForValueChanged(Device* pCallingDevice, int id)
 {
   // Find the given ID and remove the device there
@@ -66,6 +86,13 @@ bool MapParameterToDevices::unregisterDevice(Device* pCallingDevice)
 }
 */
 
+
+/** Get the list of registered Devices for a Parameter.
+ *  If the Parameter ID is registered in the map, return a list
+ *  of Devices that are registered to its value changes.
+ *  @param id integer ID of the Parameter
+ *  @return SecuredLinkedList of pointers to registered Devices
+ */
 SecuredLinkedList<Device*>* MapParameterToDevices::getRegisteredDevices(int id)
 {
   // Return a pointer to the device list of the given ID
@@ -77,6 +104,12 @@ SecuredLinkedList<Device*>* MapParameterToDevices::getRegisteredDevices(int id)
 }
 
 
+/** Removes a Device from a list.
+ *  
+ *  @param pDevicesList pointer to the list
+ *  @param pDevice pointer to the Device to remove
+ *  @return boolean whether the Device was removed successfully
+ */
 bool MapParameterToDevices::removeDeviceFromList(SecuredLinkedList<Device*>* pDevicesList, Device* pDevice)
 {
   // Search the given list for the given device

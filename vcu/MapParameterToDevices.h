@@ -1,10 +1,3 @@
-/* ======================================================================
- * This map-like class is based on the SecuredLinkedList by Steven Cybinski.
- * It is a map of Parameter IDs and a list of Devices, which are registered
- * for the Parameter's changes. This class does not execute any further 
- * logic.
- */
-
 #ifndef MAPPARAMETERTODEVICES_H
 #define MAPPARAMETERTODEVICES_H
 
@@ -16,6 +9,13 @@
 
 class Device;
 
+
+/** A map to link Parameters to a list of Devices.
+ * This map-like class is based on the SecuredLinkedList by Steven Cybinski.
+ * It is a map of Parameter IDs and a list of Devices, which are registered
+ * for the Parameter's changes. This class does not execute any further 
+ * logic.
+ */
 class MapParameterToDevices : public SecuredLinkedListMap<int, SecuredLinkedList<Device*>*>
 {
 public:
