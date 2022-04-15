@@ -4,7 +4,6 @@
 #include "MapParameterToDevices.h"
 #include "Parameter.h"
 #include "SecuredLinkedList.h"
-#include "Device.h"
 
 using aunit::TestRunner;
 
@@ -13,6 +12,12 @@ Parameter param(0);
 ParameterBool paramBool(1);
 ParameterInt paramInt(2);
 ParameterDouble paramDouble(3);
+
+class Device {
+  public:
+  Device() {};
+  ~Device() {};
+};
 
 
 // Prepare the serial port, include/exclude tests
