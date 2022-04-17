@@ -35,11 +35,11 @@ void DevicePin::onPinInterrupt()
 
 
 /** Task function that calls a logic function when notified from ISR.
- *  `onInputObservationLoop` is designed as a FreeRTOS task function
+ *  `onPinInterruptLoop` is designed as a FreeRTOS task function
  *  (i.e. with infinite loop and void pointer input). It runs and consumes
  *  CPU time only if it gets notified for hardware input changes by an
  *  interrupt service routine. Then, it calls the logic function
- *  `onInputObservation`.
+ *  `onPinInterrupt`.
  */
 void DevicePin::onPinInterruptLoop(void* pvParameters)
 {
@@ -47,7 +47,7 @@ void DevicePin::onPinInterruptLoop(void* pvParameters)
     // Wait for a notification from an ISR
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY); //TODO
     this->onPinInterrupt();
-    if(DEBUG) { //TODO
+    if (DEBUG) { //TODO
       PRINT("Debug: onPinInterruptLoop free stack size: "+String(
         uxTaskGetStackHighWaterMark(NULL)))
     }
@@ -89,7 +89,7 @@ void DevicePin::startTasks(uint16_t stackSizeOnValueChanged,
     &m_taskHandleOnValueChanged, // task handle
     1 // CPU core
   );
-  if(m_taskHandleOnValueChanged == NULL) {
+  if (m_taskHandleOnValueChanged == NULL) {
     PRINT("Fatal: failed to create task onValueChangedLoop")
   }
 
@@ -102,7 +102,7 @@ void DevicePin::startTasks(uint16_t stackSizeOnValueChanged,
     &m_taskHandleOnPinInterrupt, // task handle
     1 // CPU core
   );
-  if(m_taskHandleOnPinInterrupt == NULL) {
+  if (m_taskHandleOnPinInterrupt == NULL) {
     PRINT("Fatal: failed to create task onPinInterruptLoop")
   }
 }

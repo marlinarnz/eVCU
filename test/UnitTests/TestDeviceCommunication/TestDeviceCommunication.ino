@@ -22,7 +22,7 @@
 #include "Parameter.h"
 #include "VehicleController.h"
 #include "Device.h"
-#include "DevicePin.h"
+#include "Switch.h"
 
 
 #define ISR_PIN 15
@@ -34,49 +34,7 @@ ParameterBool paramSwitch(0);
 ParameterInt paramCount(1);
   
 
-// Define the Device child classes
-class Switch : public DevicePin
-{
-public:
-  Switch(VehicleController* vc) : DevicePin(vc) {};
-  
-  void begin() override {
-    Serial.println("Starting Switch");
-    this->startTasks(8000,8000);
-    
-    // Register Device for other Parameters
-    this->registerForValueChanged(1);
-
-    // Start input pins
-    pinMode(ISR_PIN, INPUT_PULLUP);
-  };
-  
-  void shutdown() {
-    detachInterrupt(ISR_PIN);
-    this->unregisterForValueChanged(1);
-  };
-  
-private:
-  void onValueChanged(Parameter* pParamWithNewValue) override {
-    if(pParamWithNewValue) {
-      switch(pParamWithNewValue->getId()) {
-        case 1:
-          Serial.println("Switch saw a value change in Parameter 1: "+String(
-            paramCount.getVal()));
-          break;
-        default:
-          break;
-      }
-    }
-  };
-
-  void onPinInterrupt() override {
-    // Notify other devices of the parameter change
-    this->setBooleanValue(&paramSwitch, digitalRead(ISR_PIN));
-  };
-};
-
-
+// Define the Device child class
 class DeviceListener : public Device
 {
 public:
@@ -114,7 +72,7 @@ private:
 
 
 // Instantiate Devices
-Switch devOne(&vc);
+Switch devOne(&vc, ISR_PIN, INPUT_PULLUP, &paramSwitch);
 DeviceListener devTwo(&vc);
 
 
@@ -122,7 +80,6 @@ DeviceListener devTwo(&vc);
 
 // Here comes the ISR (after the objects are initialised)
 volatile long lastPinInterrupt = 0;
-
 void IRAM_ATTR pinInterrupt() {
   if(millis() - lastPinInterrupt > 400) {
     lastPinInterrupt = millis();
@@ -154,7 +111,6 @@ void setup() {
   devOne.begin();
   
   attachInterrupt(ISR_PIN, pinInterrupt, CHANGE); // Now we can attach an interrupt
-  //gpio_isr_handler_add((gpio_num_t)ISR_PIN, (gpio_isr_t)pinInterrupt, (void*)NULL);
   
   Serial.println("===== Starting the tests =====\n");
   // Test 1

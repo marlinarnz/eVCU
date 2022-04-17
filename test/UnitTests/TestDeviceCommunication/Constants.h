@@ -33,6 +33,7 @@
 /*
  * Global constants
  */
+#define SWITCH_DEBOUNCE_MS 400
 #define QUEUE_SIZE 20
 
 #endif
