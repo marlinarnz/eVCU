@@ -121,7 +121,7 @@ DeviceListener devTwo(&vc);
 
 
 // Here comes the ISR (after the objects are initialised)
-long lastPinInterrupt = 0;
+volatile long lastPinInterrupt = 0;
 
 void IRAM_ATTR pinInterrupt() {
   if(millis() - lastPinInterrupt > 400) {

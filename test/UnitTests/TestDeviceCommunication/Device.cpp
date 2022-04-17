@@ -26,7 +26,7 @@ Device::~Device()
  */
 void Device::onValueChanged(Parameter* pParamWithNewValue)
 {
-  if(pParamWithNewValue) {
+  if (pParamWithNewValue) {
     switch(pParamWithNewValue->getId()) {
       default:
         break;
@@ -122,7 +122,7 @@ void Device::onValueChangedLoop(void* pvParameters)
   for(;;) {
     // Process parameter changes until the queue is empty
     this->onValueChanged(m_paramsQueue.popWait(portMAX_DELAY)); //TODO
-    if(DEBUG) { //TODO
+    if (DEBUG) { //TODO
       PRINT("Debug: onValueChangedLoop free stack size: "+String(
         uxTaskGetStackHighWaterMark(NULL)))
     }
@@ -177,7 +177,7 @@ void Device::startTasks(uint16_t stackSize)
     &m_taskHandleOnValueChanged, // task handle
     1 // CPU core
   );
-  if(m_taskHandleOnValueChanged == NULL) {
+  if (m_taskHandleOnValueChanged == NULL) {
     PRINT("Fatal: failed to create task onValueChanged")
   }
 }
