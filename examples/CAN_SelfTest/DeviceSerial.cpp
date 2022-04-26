@@ -34,10 +34,10 @@ void DeviceSerial::onSerialEventLoop(void* pvParameters)
   for(;;) {
     // Wait for an event on the serial bus, depending on the derived class
     this->waitForSerialEvent();
-    if (DEBUG) { //TODO
+    /*if (DEBUG) {
       PRINT("Debug: onSerialEventLoop free stack size: "+String(
         uxTaskGetStackHighWaterMark(NULL)))
-    }
+    }*/
   }
   vTaskDelete(NULL);
 }

@@ -1,20 +1,5 @@
 /* ======================================================================
- * These tests emulate input pin/serial value changes through serial
- * monitor input.
- * 
- * Useful links for ESP32 Rx interrupts:
- * - CAN bus (TWAI):
- *  - https://github.com/espressif/esp-idf/blob/667edfa7a9d64ac8e73f9c8b48d112dd82797370/examples/peripherals/twai/twai_self_test/main/twai_self_test_example_main.c
- *  - https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/twai.html#_CPPv416twai_read_alertsP8uint32_t10TickType_t
- * - UART (with events):
- *  - https://github.com/espressif/esp-idf/blob/667edfa7a9d64ac8e73f9c8b48d112dd82797370/examples/peripherals/uart/uart_events/main/uart_events_example_main.c
- *  - https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/uart.html#uart-api-using-interrupts
- * - SPI (as master):
- *  - https://github.com/espressif/esp-idf/tree/667edfa7a9d64ac8e73f9c8b48d112dd82797370/examples/peripherals/spi_slave
- *  - https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/spi_master.html#interrupt-transactions
- * 
- * Useful concepts to allow ISRs as member functions:
- * https://forum.arduino.cc/t/class-member-function-as-an-interrupt-service-routine/104337
+ * Demonstrates a switch and a listening device
  */
 
 #include <Arduino.h>
@@ -112,10 +97,9 @@ void setup() {
   
   attachInterrupt(ISR_PIN, pinInterrupt, CHANGE); // Now we can attach an interrupt
   
-  Serial.println("===== Starting the tests =====\n");
-  // Test 1
-  Serial.println("Test 1: Device two reacts to the input observation of Device \n"+
-                 String("one and changes a Parameter, to which Device one reacts.\n"));
+  Serial.println("===== Starting the test =====\n");
+  Serial.println("Device two reacts to the input observation of Device one \n"+
+                 String("and changes a Parameter, to which Device one reacts.\n"));
 
   while(1) { // don't leave the scope where the Device instances live
     vTaskDelay(100);

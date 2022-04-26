@@ -31,7 +31,7 @@ struct configSPI_t {
   int8_t setDMA=3;      // refers to SPI_DMA_CH_AUTO
   uint32_t speed_hz=5000000;
   uint16_t dutyCycle=128;
-} defaultSPIConfig;
+};
 
 
 /** Full description of an SPI transaction for `sendTransaction()`.
@@ -41,8 +41,9 @@ struct configSPI_t {
 struct transactionDescr_t {
   spi_transaction_t* desc;
   spi_device_handle_t slave;
+  QueueHandle_t queueHandle;
   uint16_t interval;
-  bool delAfterRead;
+  uint8_t id;
 };
 
 
@@ -58,19 +59,28 @@ struct transactionDescr_t {
  */
 class DeviceSPI : public DeviceSerial
 {
+public:
+  DeviceSPI(VehicleController* vc);
+  static bool sendTransaction(transactionDescr_t* trans);
+  QueueHandle_t m_queueHandleSendTransaction;
+
 private:
-  virtual void onSerialEvent(void* recvBuf, uint8_t transId);  // To be defined in derived class
+  virtual void onSerialEvent(void* recvBuf, uint8_t len, uint8_t transId);
   void waitForSerialEvent();
   void onSerialEventLoop(void* pvParameters);
-  static bool IRAM_ATTR sendTransaction(void* trans);
+  static bool IRAM_ATTR sendTransactionISR(void* trans);
+  static void sendTransactionLoop(void* _this);
+  TaskHandle_t m_taskHandleSendTransaction;
   static spi_device_interface_config_t getSlaveConfig(int pin, uint32_t speed, uint16_t duty);
-  void deleteTrans(spi_transaction_t* trans);
+  void deleteTrans(transactionDescr_t* trans);
 
 protected:
-  bool initSerialProtocol(configSPI_t config=defaultSPIConfig);
+  bool initSerialProtocol(configSPI_t config);
   void endSerialProtocol();
   void setTransactionPeriodic(uint16_t interval, void* dataBuf, uint8_t len, uint8_t transId);
   static void startOnSerialEventLoop(void* _this);
+  virtual void startTasks(uint16_t stackSizeOnValueChanged=4096,
+                          uint16_t stackSizeOnSerialEvent=4096);
   TaskHandle_t m_taskHandleOnSerialEvent;
   spi_device_handle_t m_handleSlave1;
   uint8_t m_host;

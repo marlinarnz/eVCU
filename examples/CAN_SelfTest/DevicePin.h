@@ -21,8 +21,8 @@ private:
   void onPinInterruptLoop(void* pvParameters);
 
 protected:
-  void startTasks(uint16_t stackSizeOnValueChanged=4096,
-                  uint16_t stackSizeOnPinInterrupt=4096);
+  void startTasks(uint16_t stackSizeOnValueChanged=configMINIMAL_STACK_SIZE*4,
+                  uint16_t stackSizeOnPinInterrupt=4096); //TODO
   static void startOnPinInterruptLoop(void* _this);
   TaskHandle_t m_taskHandleOnPinInterrupt;
 };
