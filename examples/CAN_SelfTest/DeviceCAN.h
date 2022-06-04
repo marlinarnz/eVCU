@@ -3,27 +3,43 @@
 
 #include <Arduino.h>
 #include <driver/twai.h>
-#include <driver/timer.h>
 #include "DeviceSerial.h"
 
 
 /** Config data for the serial bus.
  *  Assigns pins, speeds etc. A functional default exists.
- *  @param host         S
+ *  @param txPin        TX pin to connect to the CAN transceiver as `gpio_num_t`
+ *  @param rxPin        RX pin to connect to the CAN transceiver as `gpio_num_t`
+ *  @param mode         TWAI driver mode: `TWAI_MODE_NORMAL`,
+ *                      `TWAI_MODE_NO_ACK` or `TWAI_MODE_LISTEN_ONLY`
+ *  @param speed        bus speed 125, 250, 500 or 1000 kbps
  */
 struct configCAN_t {
-  int8_t host=1;
+  gpio_num_t txPin=GPIO_NUM_21;
+  gpio_num_t rxPin=GPIO_NUM_22;
+  twai_mode_t mode=TWAI_MODE_NORMAL;
+  uint32_t speed=500000;
 };
 
 
-/** Base class for Devices that handle the CAN bus.
+/** Map variable that connects timers with corresponding messages.
+ *  Keys are FreeRTOS timer handles and values are ESP32 TWAI message
+ *  pointers. The map allows a callback function to determine which
+ *  message should be sent when a timer alerts.
+ */
+SecuredLinkedListMap<TimerHandle_t, twai_message_t*> mapTimerMsg = SecuredLinkedListMap<TimerHandle_t, twai_message_t*>();
+
+
+/** Base class for Devices that interact with the CAN bus.
  *  Provides functions for initialising and transmissing data on
  *  the bus based on the DeviceSerial class. DeviceCAN instances
- *  must call `startTasks()` and `initSerialProtocol()` in their
- *  `begin()` function and call `endSerialProtocol()` in
- *  their `shutdown()`. They can send messages on the bus using
- *  `setTransactionPeriodic()`. Two different transactions can
- *  be sent periodically using the ESP32's hardware timers.
+ *  must call `startTasks()` in their `begin()` function. At least
+ *  one `DeviceCAN` instance must call `initSerialProtocol()` in
+ *  its `begin()` function and `endSerialProtocol()` in its
+ *  `shutdown()`. As there is only one CAN bus peripheral and driver
+ *  on the ESP32, it makes sense to have only one `DeviceCAN`
+ *  instance, a CAN manager, which handles reading and writing
+ *  messages.
  */
 class DeviceCAN : public DeviceSerial
 {
@@ -31,27 +47,19 @@ public:
   DeviceCAN(VehicleController* vc);
 
 private:
-  virtual void onSerialEvent(void* recvBuf, uint8_t len, uint8_t transId);
+  virtual void onMsgRcv(twai_message_t* pMsg);
+  virtual void onRemoteFrameRcv(twai_message_t* pMsg);
   void waitForSerialEvent();
-  void onSerialEventLoop(void* pvParameters);
-  static bool IRAM_ATTR sendTransactionISR(void* trans);
-  static void sendTransactionLoop(void* _this);
-  TaskHandle_t m_taskHandleSendTransaction;
-  void deleteTrans(transactionDescr_t* trans);
+  static bool sendTransaction(twai_message_t* pMsg);
+  static void timerCallbackSendTransaction(TimerHandle_t xTimer);
+  static void checkBusErrors();
 
 protected:
-  static bool sendTransaction(transactionDescr_t* trans);
-  QueueHandle_t m_queueHandleSendTransaction;
+  bool setTransactionPeriodic(twai_message_t* pMsg, uint16_t interval);
   bool initSerialProtocol(configCAN_t config);
   void endSerialProtocol();
-  void setTransactionPeriodic(uint16_t interval, void* dataBuf, uint8_t len, uint8_t transId);
-  static void startOnSerialEventLoop(void* _this);
   virtual void startTasks(uint16_t stackSizeOnValueChanged=4096,
                           uint16_t stackSizeOnSerialEvent=4096);
-  TaskHandle_t m_taskHandleOnSerialEvent;
-  transactionDescr_t* m_pTransOnce;
-  transactionDescr_t* m_pTransAtTimer1;
-  transactionDescr_t* m_pTransAtTimer2;
 };
 
 #endif

@@ -1,383 +1,321 @@
-#include "DeviceSPI.h"
+#include "DeviceCAN.h"
 
 
 /** Constructor calls the parent constructor.
  */
-DeviceSPI::DeviceSPI(VehicleController* vc)
-  : DeviceSerial(vc), m_queueHandleSendTransaction(NULL), m_taskHandleSendTransaction(NULL)
+DeviceCAN::DeviceCAN(VehicleController* vc)
+  : DeviceSerial(vc)
 {}
 
 
-/** Waits for transaction results and notifies `onSerialEvent()`.
- *  First, it checks results on one-time transactions, then for timer
- *  one and then for timer two without getting blocked through wait
- *  times.
+/** Waits for incoming messages and notifies the corresponding function.
+ *  Regular data frames are forwarded to `onMsgRcv()`, remote frames
+ *  go to `onRemoteFrameRcv()`.
  */
-void DeviceSPI::waitForSerialEvent()
+void DeviceCAN::waitForSerialEvent()
 {
-  // Check the one-time transactions
-  if (this->m_pTransOnce != NULL) {
-    transactionDescr_t* pTransDescr = this->m_pTransOnce;
-    // Check for transaction results
-    switch (spi_device_get_trans_result(this->m_handleSlave1,
-                                        &(pTransDescr->desc), 0))
-    {
-      case ESP_OK:
-        // Set the one-time transaction pointer back to NULL
-        this->m_pTransOnce = NULL;
-        // Forward the result
-        this->onSerialEvent(pTransDescr->desc->rx_buffer,
-                            pTransDescr->desc->length/8,
-                            pTransDescr->id);
-        // Delete one-time transaction after receiving it
-        DeviceSPI::deleteTrans(pTransDescr);
-        break;
-      case ESP_ERR_TIMEOUT:
-        break;
-      default:
-        PRINT("Error receiving one-time SPI transaction")
-        this->m_pTransOnce = NULL;
-        DeviceSPI::deleteTrans(pTransDescr);
-        break;
-    }
-  }
-
-  // Fetch the result of the last timed transaction
-  if (this->m_pTransAtTimer1 != NULL) {
-    switch(spi_device_get_trans_result(this->m_handleSlave1,
-                                       &(this->m_pTransAtTimer1->desc), 0))
-    {
-      case ESP_OK:
-        // Forward the transaction results to the logic function
-        this->onSerialEvent(this->m_pTransAtTimer1->desc->rx_buffer,
-                            this->m_pTransAtTimer1->desc->length/8,
-                            this->m_pTransAtTimer1->id);
-        break;
-      case ESP_ERR_TIMEOUT:
-        break;
-      default:
-        PRINT("Error receiving results from an SPI transaction on timer one")
-        break;
-    }
-
-    // If there was one on timer 1, timer 2 might also have results
-    if (this->m_pTransAtTimer2 != NULL) { 
-      switch(spi_device_get_trans_result(this->m_handleSlave1,
-                                         &(this->m_pTransAtTimer2->desc), 0))
-      {
-        case ESP_OK:
-          // Forward the transaction results to the logic function
-          this->onSerialEvent(this->m_pTransAtTimer2->desc->rx_buffer,
-                              this->m_pTransAtTimer2->desc->length/8,
-                              this->m_pTransAtTimer2->id);
-          break;
-        case ESP_ERR_TIMEOUT:
-          break;
-        default:
-          PRINT("Error receiving results from an SPI transaction on timer two")
-          break;
-      }
-    }
-  }
-}
-
-
-/** Interface to handle the results of SPI transactions.
- *  To be defined in the derived class.
- *  @param recvBuf data buffer with message from the slave device
- *  @param len length of the receive data buffer
- *  @param transId transaction ID, if set in call to `setTransactionPeriodic()`
- */
-void DeviceSPI::onSerialEvent(void* recvBuf, uint8_t len, uint8_t transId)
-{}
-
-
-/** Invokes a SPI transaction periodically or only once.
- *  SPI master transmissions send and receive in one command, but the
- *  ESP32 driver allows asynchronous sending and receiving. The
- *  latter is coordinated by `waitForSerialEvent()`. This function creates
- *  transmissions and manages timers to send them. The ESP32 allows setting
- *  two timers. The fist periodic transmission must not have a longer
- *  interval than the second and the second must not have more than double
- *  of the first.
- *  @param interval wait time before repeating the transaction in millis. `0`
- *                  will execute the transaction just once
- *  @param dataBuf pointer-type buffer for the data to write
- *  @param len length of the `dataBuf` and the maximum length of the receive
- *             buffer in bytes
- *  @param transId optional parameter to give this transaction a unique
- *                 identifyer. Useful to interpret periodic return values
- */
-void DeviceSPI::setTransactionPeriodic(uint16_t interval, void* dataBuf, uint8_t len, uint8_t transId)
-{
-  // Init the transaction: create it on heap
-  spi_transaction_t* trans = new spi_transaction_t;
-  memset(trans, 0, sizeof(*trans));
-  trans->length = len * 8;
-  trans->tx_buffer = dataBuf;
-  byte recvBuf[len] = {0};
-  trans->rx_buffer = recvBuf;
-  
-  transactionDescr_t* phTransDesc = new transactionDescr_t;
-  phTransDesc->desc=trans;
-  phTransDesc->slave=this->m_handleSlave1;
-  phTransDesc->queueHandle=this->m_queueHandleSendTransaction;
-  phTransDesc->interval=interval;
-  phTransDesc->id=transId;
-
-  if (interval == 0) {
-    if (this->m_pTransOnce == NULL) {
-      // Send transaction once
-      this->m_pTransOnce = phTransDesc;
-      if (!DeviceSPI::sendTransaction(phTransDesc)) {
-        PRINT("Error sending SPI transaction. Transaction queue full or wrong parameters")
-      }
-    } else {
-      PRINT("Error sending SPI transaction: another one-time transaction is waiting to receive results")
-    }
-    
-  } else {
-    if (this->m_pTransAtTimer1 == NULL || this->m_pTransAtTimer2 == NULL) {
-      // Initialise the timer
-      timer_group_t group = (this->m_host==1) ? TIMER_GROUP_0 : TIMER_GROUP_1;
-      uint8_t id = (this->m_pTransAtTimer1 == NULL) ? 0 : 1;
-      const timer_config_t config = {
-        .alarm_en=TIMER_ALARM_EN,
-        .counter_en=TIMER_PAUSE,
-        .intr_type=TIMER_INTR_LEVEL,
-        .counter_dir=TIMER_COUNT_UP,
-        .auto_reload=TIMER_AUTORELOAD_EN,
-        .divider=80 // Frequency is 80MHz
-      };
-      if (ESP_OK == timer_init(group, (timer_idx_t)id, &config)) {
-
-        // Set the timer
-        // 1MHz / (1000*interval[ms]) is 
-        timer_set_alarm_value(group, (timer_idx_t)id, 1000 * interval);
-        // Add the ISR
-        timer_enable_intr(group, (timer_idx_t)id);
-        if (ESP_OK == timer_isr_callback_add(group, (timer_idx_t)id,
-                                             sendTransactionISR, phTransDesc, 0))
-        {
-          if (id == 0) this->m_pTransAtTimer1 = phTransDesc;
-          else this->m_pTransAtTimer2 = phTransDesc;
-          timer_start(group, (timer_idx_t)id);
-          PRINT("Info: Set up SPI transaction timer successfully")
-        } else {
-          PRINT("Error: Failed to add the ISR to the SPI transaction timer")
-          DeviceSPI::deleteTrans(phTransDesc);
-        }
-      } else {
-        PRINT("Error: Wrong SPI transaction timer initialisation config parameter(s)")
-        DeviceSPI::deleteTrans(phTransDesc);
-      }
-    } else {
-      PRINT("Error: maximum number of SPI transaction timers already set (2). Cannot set more")
-      DeviceSPI::deleteTrans(phTransDesc);
-    }
-  }
-}
-
-
-/** Sends SPI transactions on the queue.
- *  Different ESP32 hardware timers can use this function in order to
- *  send their transactions on the queue using `spi_device_queue_trans()`.
- *  @param trans description of the SPI transaction of `transactionDescr_t`
- *  @return boolean if the transaction was queued successfully
- */
-bool DeviceSPI::sendTransaction(transactionDescr_t* trans)
-{
-  if (ESP_OK == spi_device_queue_trans(trans->slave, trans->desc, 0)) {
-    return true;
-  } else {
-    // Queue is full
-    return false;
-  }
-}
-
-
-/** ISR to initiate sending an SPI transaction.
- *  Puts the transaction in an event queue that is observed by a higher-
- *  priority task, which just calls `sendTransaction()`. This workaround
- *  is necessary because `spi_device_queue_trans()` cannot be called from
- *  ISRs as it uses the FreeRTOS API function `xQueueSend()`.
- *  @param trans description of the SPI transaction of `transactionDescr_t`
- *  @return boolean if the ISR should yield to a higher priority task
- */
-bool IRAM_ATTR DeviceSPI::sendTransactionISR(void* trans)
-{
-  BaseType_t highTaskAwoken = pdFALSE;
-  transactionDescr_t* info = (transactionDescr_t*) trans;
-  if (info != NULL) xQueueSendFromISR(info->queueHandle, &trans, &highTaskAwoken);
-  return highTaskAwoken == pdTRUE; // return whether to yield at the end of ISR
-}
-
-
-/** Task function for sending SPI transactions from ISRs.
- *  @see `sendTransactionISR()`
- *  @param _this pointer to the current object of void* type
- */
-void DeviceSPI::sendTransactionLoop(void* _this)
-{
-  // Cast this pointer to get queue handle
-  QueueHandle_t queueHandle = static_cast<DeviceSPI*>(_this)->m_queueHandleSendTransaction;
-  for (;;) {
-    // Wait for a transaction to send
-    transactionDescr_t* trans = NULL;
-    xQueueReceive(queueHandle, &(trans), portMAX_DELAY);
-    DeviceSPI::sendTransaction(trans);
-  }
-  vTaskDelete(NULL);
-}
-
-
-/** Install the drivers and start serial communication.
- *  This function must be called in the object's `begin()` call.
- *  @param config struct with all information for serial initialisation
- *  @return boolean if the initialisation was successful or not
- */
-bool DeviceSPI::initSerialProtocol(configSPI_t config)
-{
-  // Set this object's SPI-relevant members
-  this->m_host = config.host;
-  this->m_pTransOnce = NULL;
-  this->m_pTransAtTimer1 = NULL;
-  this->m_pTransAtTimer2 = NULL;
-  
-  // Prepare a struct with pin information
-  static spi_bus_config_t spiPins={
-    .mosi_io_num=config.pinMOSI,
-    .miso_io_num=config.pinMISO,
-    .sclk_io_num=config.pinSCLK,
-    .quadwp_io_num=config.pinQUADWP,
-    .quadhd_io_num=config.pinQUADHD
-  };
-
-  // Init the driver
-  switch(spi_bus_initialize((spi_host_device_t)config.host, &spiPins, config.setDMA)) {
-    
+  // Wait for a message
+  twai_message_t msg;
+  switch (twai_receive(&msg, pdMS_TO_TICKS(1005))) {
     case ESP_OK:
-      // All good, so we can continue
-      // Add slaves, if their pins are defined
-      PRINT("Info: started SPI bus")
-      esp_err_t returnVal;
-
-      // Try to add slave 1
-      if (config.pinCS1 > -1) {
-        static spi_device_interface_config_t slaveConfig = DeviceSPI::getSlaveConfig(
-          config.pinCS1, config.speed_hz, config.dutyCycle);
-        returnVal = spi_bus_add_device((spi_host_device_t)config.host, &slaveConfig, &(this->m_handleSlave1));
-        if (returnVal == ESP_ERR_INVALID_ARG) PRINT("Error adding SPI slave 1: invalid argumend in config.")
-        else if (returnVal == ESP_ERR_NOT_FOUND) PRINT("Error adding SPI slave 1: no CS slot available.")
-        else if (returnVal == ESP_ERR_NO_MEM) PRINT("Error adding SPI slave 1: out of memory.")
-        else if (returnVal == ESP_OK) {
-          PRINT("Info: added receiver device to SPI bus")
-          return true;
-        }
-      } else {
-        PRINT("Warning: no slave defined for SPI communication")
-        return true;
-      }
-
-    // Cases where the initialisation went wrong return false and log an error
+      // Check if the message is remote or normal and forward
+      if (msg.rtr) this->onRemoteFrameRcv(&msg);
+      else this->onMsgRcv(&msg);
+    case ESP_ERR_TIMEOUT:
+      // Check for driver errors
+      DeviceCAN::checkBusErrors();
     case ESP_ERR_INVALID_STATE:
-      PRINT("Error initialising the SPI bus: host is already in use")
-    case ESP_ERR_NOT_FOUND:
-      PRINT("Error initialising the SPI bus: no DMA channel available, but demanded in configuration file")
-    case ESP_ERR_NO_MEM:
-      PRINT("Error initialising the SPI bus: out of memory")
+      PRINT("Error receiving a CAN message: CAN driver is not installed")
+      vTaskDelay(pdMS_TO_TICKS(5));
     default:
-      PRINT("Error initialising the SPI bus. Check the pins.")
+      PRINT("Error receiving a CAN message")
+      break;
+  }
+}
+
+
+/** Interface to handle incoming messages.
+ *  To be defined in derived class.
+ *  @param pMsg: pointer to a twai_message_t message
+ */
+void DeviceCAN::onMsgRcv(twai_message_t* pMsg)
+{}
+
+
+/** Interface to handle incoming request / remote frames.
+ *  To be defined in derived class.
+ *  @param pMsg: pointer to a twai_message_t message
+ */
+void DeviceCAN::onRemoteFrameRcv(twai_message_t* pMsg)
+{}
+
+
+/** Set a message for transaction periodically or once.
+ *  Sends a message on the CAN bus immediately, if an interval of 0
+ *  is given. Otherwise, it creates a new FreeRTOS software timer
+ *  which triggers sending this message periodically. Timer-
+ *  message pairs are then saved into the corresponding map. Once
+ *  set, the transaction cannot be deleted until all transactions
+ *  are stopped and cleared with `endSerialProtocol()`.
+ *  @param pMsg pointer to an ESP32 TWAI driver message. Must be
+ *              on the heap
+ *  @param interval interval between message transmission in ms
+ *  @return bool if the message was transmitted successfully in
+ *               case the interval was 0, or if the timer was set
+ *               up successfully otherwise
+ */
+bool DeviceCAN::setTransactionPeriodic(twai_message_t* pMsg, uint16_t interval)
+{
+  // If the interval is 0, send the message once
+  if (interval == 0) {
+    return DeviceCAN::sendTransaction(pMsg);
+  }
+  else {
+    // Create a FreeRTOS software timer for this message.
+    // Its ID is the message identifier
+    TimerHandle_t xTimer = xTimerCreate("",
+                                        pdMS_TO_TICKS(interval),
+                                        pdTRUE,
+                                        (void*)(pMsg->identifier),
+                                        DeviceCAN::timerCallbackSendTransaction);
+    if (xTimer != NULL) {
+      // Save the message and its timer in the map with the timer
+      // handle as key
+      mapTimerMsg.put(xTimer, pMsg);
+      // Start the timer
+      if (xTimerStart(xTimer, 1) != pdPASS) {
+        PRINT("Error starting the timer for CAN message " + String(pMsg->identifier))
+        return false;
+      }
+      return true;
+    }
+    else {
+      PRINT("Error creating a timer for CAN message " + String(pMsg->identifier))
+      return false;
+    }
+  }
+}
+
+
+/** Transmit a message on the CAN bus.
+ *  Uses the ESP32 TWAI API to send messages.
+ *  @param pMsg pointer to an ESP32 TWAI driver message
+ *  @return boolean if the transmission was succesful
+ */
+bool DeviceCAN::sendTransaction(twai_message_t* pMsg)
+{
+  // Queue the message for transmission
+  switch (twai_transmit(pMsg, pdMS_TO_TICKS(5))) {
+    case ESP_OK:
+      return true;
+    case ESP_ERR_TIMEOUT:
+      // Check the bus
+      DeviceCAN::checkBusErrors();
+    case ESP_ERR_INVALID_STATE:
+      // Try to start the protocol and send again
+      PRINT("Error sending CAN message: Try to start the CAN driver")
+      if (twai_start() == ESP_OK) DeviceCAN::sendTransaction(pMsg);
+      else DeviceCAN::checkBusErrors();
+    case ESP_ERR_NOT_SUPPORTED:
+      PRINT("Error sending CAN message because in listen only mode")
+    default:
+      PRINT("Error sending CAN message because of wrong parameters or sedn queue disabled")
       break;
   }
   return false;
 }
 
 
-/** Clear the bus and free the RAM
+/** Callback function for the send timer.
+ *  Calls `sendTransaction` with the message pointer saved in
+ *  the map for the given timer handle.
+ *  @param xTimer handle of the calling FreeRTOS timer
  */
-void DeviceSPI::endSerialProtocol()
+void DeviceCAN::timerCallbackSendTransaction(TimerHandle_t xTimer)
 {
-  // End timers
-  timer_group_t group = (this->m_host==1) ? TIMER_GROUP_0 : TIMER_GROUP_1;
-  if (this->m_pTransAtTimer1 != NULL) timer_deinit(group, (timer_idx_t)0);
-  if (this->m_pTransAtTimer2 != NULL) timer_deinit(group, (timer_idx_t)1);
-
-  // delete transactions
-  if (this->m_pTransAtTimer1 != NULL) DeviceSPI::deleteTrans(this->m_pTransAtTimer1);
-  if (this->m_pTransAtTimer2 != NULL) DeviceSPI::deleteTrans(this->m_pTransAtTimer2);
-
-  // Unregister slaves
-  spi_bus_remove_device(this->m_handleSlave1);
+  DeviceCAN::sendTransaction(mapTimerMsg.get(xTimer));
 }
 
 
-/**
- * Helper function to get a driver-compatible slave config file.
- * @param pin GPIO corresponding to the number of the slave (1, 2 or 3)
- * @param speed speed of the transmission in Hz
- * @param duty duty cycle of the transmission
- * @return spi_device_interface_config_t config struct
+/** Install the drivers and start serial communication.
+ *  This function must be called in the object's `begin()` call.
+ *  By default, the TWAI driver ISR is not placed in IRAM.
+ *  @param config struct with all information for serial initialisation
+ *  @return boolean if the initialisation was successful or not
  */
-spi_device_interface_config_t DeviceSPI::getSlaveConfig(int pin, uint32_t speed, uint16_t duty)
+bool DeviceCAN::initSerialProtocol(configCAN_t config)
 {
-  // Prepare the struct with receiving device settings
-  static spi_device_interface_config_t receiveConfig={
-    .command_bits=0,
-    .address_bits=0,
-    .dummy_bits=0,
-    .mode=0,
-    .duty_cycle_pos=duty,
-    .cs_ena_pretrans=0,
-    .cs_ena_posttrans=3,        //Keep the CS low 3 cycles after transaction, to stop slave from missing the last bit when CS has less propagation delay than CLK
-    .clock_speed_hz=speed,
-    .input_delay_ns=0,
-    .spics_io_num=pin,
-    .flags=0,
-    .queue_size=2,              //Queue size for transactions to be sent
-    .pre_cb=NULL,               //Callback function prior and after transmission
-    .post_cb=NULL
-  };
-  return receiveConfig;
+  // Initialise configuration structures using macro initialisers
+  twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(
+    config.txPin,
+    config.rxPin,
+    config.mode);
+  twai_timing_config_t t_config;
+  if (config.speed == 125000) t_config = TWAI_TIMING_CONFIG_125KBITS();
+  else if (config.speed == 250000) t_config = TWAI_TIMING_CONFIG_250KBITS();
+  else if (config.speed == 500000) t_config = TWAI_TIMING_CONFIG_500KBITS();
+  else if (config.speed == 1000000) t_config = TWAI_TIMING_CONFIG_1MBITS();
+  else {
+    PRINT("Error: Wrong CAN bus speed given in initialisation")
+    return false;
+  }
+  // Do not set a receive filter because one device cannot know
+  // the desired message IDs of other devices.
+  twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+
+  // Install TWAI driver
+  // If it was already installed by another device, still return true
+  switch (twai_driver_install(&g_config, &t_config, &f_config)) {
+
+    // Success
+    case ESP_OK:
+      PRINT("Info: CAN driver installed")
+      
+      // Start TWAI driver
+      if (twai_start() == ESP_OK) {
+          PRINT("Info: CAN driver started")
+          return true;
+      } else {
+          PRINT("Error starting CAN driver: not in stopped state")
+      }
+
+    // Cases where the initialisation went wrong: log an error
+    case ESP_ERR_INVALID_STATE:
+      PRINT("Debug: CAN driver is already installed")
+      return true;
+    case ESP_ERR_INVALID_ARG:
+      PRINT("Error: Wrong arguments for initialising the CAN driver")
+    case ESP_ERR_NO_MEM:
+      PRINT("Error initialising the CAN bus: out of memory")
+    default:
+      PRINT("Error initialising the CAN bus")
+      break;
+  }
+  return false;
 }
 
 
-/** Helper function to delete outdated transactions
+/** Uninstall the TWAI driver and clear the timer map.
+ *  This also deletes the messages from the heap.
  */
-void DeviceSPI::deleteTrans(transactionDescr_t* trans)
+void DeviceCAN::endSerialProtocol()
 {
-  delete trans->desc;
-  delete trans;
+  // Delete all timers in the map
+  SecuredLinkedListMapElement<TimerHandle_t, twai_message_t*> elementsList[mapTimerMsg.size()];
+  mapTimerMsg.getAll(elementsList);
+  for (int i=0; i<mapTimerMsg.size(); i++) {
+    if (elementsList[i].key != NULL) {
+      xTimerDelete(elementsList[i].key, pdMS_TO_TICKS(10));
+    }
+  }
+  // Clear the map
+  mapTimerMsg.clear();
+
+  // Check the driver status
+  twai_status_info_t status;
+  if (twai_get_status_info(&status) == ESP_OK) {
+    
+    // The driver must be in stopped or bus-off state to be uninstalled
+    switch (status.state) {
+      case TWAI_STATE_STOPPED:
+        break;
+      case TWAI_STATE_RUNNING:
+        // Stop the driver
+        twai_stop();
+        break;
+      case TWAI_STATE_BUS_OFF:
+        break;
+      case TWAI_STATE_RECOVERING:
+        // Wait until it is recovered
+        PRINT("Info: Waiting for CAN bus to recover before deinitialisation")
+        while (status.state == TWAI_STATE_RECOVERING) {
+          vTaskDelay(1);
+          twai_get_status_info(&status);
+        }
+        if (status.state != TWAI_STATE_STOPPED) {
+          this->endSerialProtocol();
+        }
+      default:
+        break;
+    }
+
+    // Uninstall the driver
+    twai_driver_uninstall();
+  }
+  else {
+    PRINT("Error reading status information of CAN driver")
+  }
 }
 
 
-/** Starts tasks from `DeviceSerial` and the `sendTransactionLoop()`.
+/** Checks the CAN bus state.
+ *  This helper function reports warnings and tries to recover the
+ *  bus to running state.
+ */
+void DeviceCAN::checkBusErrors()
+{
+  // Check the driver status
+  twai_status_info_t status;
+  if (twai_get_status_info(&status) == ESP_OK) {
+    switch (status.state) {
+      case TWAI_STATE_STOPPED:
+        if (twai_start() != ESP_OK) {
+          PRINT("Error starting CAN bus: Driver not installed")
+          return;
+        }
+      case TWAI_STATE_RUNNING:
+        break;
+      case TWAI_STATE_BUS_OFF:
+        // Try to recover the bus
+        if (twai_initiate_recovery() == ESP_OK) {
+          PRINT("Info: Started CAN bus recovery")
+          vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        else {
+          PRINT("Error recovering the CAN bus")
+          return;
+        }
+      case TWAI_STATE_RECOVERING:
+        // Wait until it is recovered
+        PRINT("Info: Waiting for CAN bus to recover")
+        while (status.state == TWAI_STATE_RECOVERING) {
+          vTaskDelay(1);
+          twai_get_status_info(&status);
+        }
+        twai_start();
+        PRINT("Info: CAN bus recovered and started")
+      default:
+        break;
+    }
+  }
+  else {
+    PRINT("Error reading status information of CAN driver")
+  }
+
+  /*// Check TWAI driver alerts
+  uint32_t alerts;
+  switch (twai_read_alerts(&alerts, 1) {
+    case ESP_OK:
+      // Read alerts
+      if ()
+    case ESP_ERR_TIMEOUT:
+      PRINT("Debug: No CAN bus alert occured")
+    default:
+      PRINT("Error reading CAN bus alerts")
+  }*/
+}
+
+
+/** Starts tasks from `DeviceSerial`.
  *  Must be called in the derived class's `begin()` function.
  *  @param stackSizeOnValueChanged size of onValueChangedLoop task
  *         stack in bytes. Default is 4096
  *  @param stackSizeOnPinInterrupt size of onPinInterruptLoop task
  *         stack in bytes. Default is 4096
  */
-void DeviceSPI::startTasks(uint16_t stackSizeOnValueChanged,
+void DeviceCAN::startTasks(uint16_t stackSizeOnValueChanged,
                            uint16_t stackSizeOnSerialEvent)
 {
-  // Create the transaction queue
-  this->m_queueHandleSendTransaction = xQueueCreate(2, sizeof(transactionDescr_t*));
-  
-  // Start the send task
-  xTaskCreatePinnedToCore(
-    this->sendTransactionLoop, // function name
-    "sendTransaction", // Name for debugging
-    (uint16_t)(4096/4),
-    this, // Parameters pointer for the function; must be static
-    3, // Priority (1 is lowest)
-    &m_taskHandleSendTransaction, // task handle
-    1 // CPU core
-  );
-  if (m_taskHandleSendTransaction == NULL) {
-    PRINT("Fatal: failed to create task sendTransactionLoop")
-  }
-
   // Call parent function to start the rest of the tasks
   DeviceSerial::startTasks(stackSizeOnValueChanged, stackSizeOnSerialEvent);
 }
