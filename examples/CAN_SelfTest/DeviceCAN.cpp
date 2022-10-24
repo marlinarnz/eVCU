@@ -1,11 +1,25 @@
 #include "DeviceCAN.h"
 
 
+MapTimerMsg* MapTimerMsg::obj{NULL};
+
+/** Returns the instance pointer of the timer-message map class.
+ *  Instanciates an object at the first call (Singleton)
+ */
+MapTimerMsg* MapTimerMsg::getInstance()
+{
+  if (!obj) obj = new MapTimerMsg();
+  return obj;
+}
+
+
 /** Constructor calls the parent constructor.
  */
 DeviceCAN::DeviceCAN(VehicleController* vc)
-  : DeviceSerial(vc)
-{}
+  : DeviceSerial(vc), m_pMap(NULL)
+{
+  m_pMap = MapTimerMsg::getInstance();
+}
 
 
 /** Waits for incoming messages and notifies the corresponding function.
@@ -81,7 +95,7 @@ bool DeviceCAN::setTransactionPeriodic(twai_message_t* pMsg, uint16_t interval)
     if (xTimer != NULL) {
       // Save the message and its timer in the map with the timer
       // handle as key
-      mapTimerMsg.put(xTimer, pMsg);
+      this->m_pMap->put(xTimer, pMsg);
       // Start the timer
       if (xTimerStart(xTimer, 1) != pdPASS) {
         PRINT("Error starting the timer for CAN message " + String(pMsg->identifier))
@@ -119,7 +133,7 @@ bool DeviceCAN::sendTransaction(twai_message_t* pMsg)
     case ESP_ERR_NOT_SUPPORTED:
       PRINT("Error sending CAN message because in listen only mode")
     default:
-      PRINT("Error sending CAN message because of wrong parameters or sedn queue disabled")
+      PRINT("Error sending CAN message because of wrong parameters or send queue disabled")
       break;
   }
   return false;
@@ -133,7 +147,8 @@ bool DeviceCAN::sendTransaction(twai_message_t* pMsg)
  */
 void DeviceCAN::timerCallbackSendTransaction(TimerHandle_t xTimer)
 {
-  DeviceCAN::sendTransaction(mapTimerMsg.get(xTimer));
+  MapTimerMsg* map = MapTimerMsg::getInstance(); // get Singleton instance
+  DeviceCAN::sendTransaction(map->get(xTimer));
 }
 
 
@@ -201,15 +216,15 @@ bool DeviceCAN::initSerialProtocol(configCAN_t config)
 void DeviceCAN::endSerialProtocol()
 {
   // Delete all timers in the map
-  SecuredLinkedListMapElement<TimerHandle_t, twai_message_t*> elementsList[mapTimerMsg.size()];
-  mapTimerMsg.getAll(elementsList);
-  for (int i=0; i<mapTimerMsg.size(); i++) {
+  SecuredLinkedListMapElement<TimerHandle_t, twai_message_t*> elementsList[this->m_pMap->size()];
+  this->m_pMap->getAll(elementsList);
+  for (int i=0; i<this->m_pMap->size(); i++) {
     if (elementsList[i].key != NULL) {
       xTimerDelete(elementsList[i].key, pdMS_TO_TICKS(10));
     }
   }
   // Clear the map
-  mapTimerMsg.clear();
+  this->m_pMap->clear();
 
   // Check the driver status
   twai_status_info_t status;
@@ -269,7 +284,7 @@ void DeviceCAN::checkBusErrors()
         // Try to recover the bus
         if (twai_initiate_recovery() == ESP_OK) {
           PRINT("Info: Started CAN bus recovery")
-          vTaskDelay(pdMS_TO_TICKS(100));
+          vTaskDelay(pdMS_TO_TICKS(50));
         }
         else {
           PRINT("Error recovering the CAN bus")

@@ -10,12 +10,49 @@
 #include "Parameter.h"
 #include "VehicleController.h"
 #include "Device.h"
+#include "DeviceCAN.h"
 
 
 // Instantiate the VehicleController and the vehicle's Parameters
 VehicleController vc;
 ParameterInt current(0);
-  
+
+
+// Define CAN Manager
+class CANManager : public DeviceCAN
+{
+public:
+  CANManager(VehicleController* vc) : DeviceCAN(vc), msg(NULL) {
+    // Define message
+    msg = new twai_message_t;
+    msg->data_length_code = 1;
+    msg->identifier = 0x1;
+    msg->self = 1; // self reception request
+    msg->data[0] = 0;
+  };
+  void begin() {
+    Serial.println("Started CAN Manager");
+    this->startTasks(8000, 8000);
+    configCAN_t config;
+    config.mode = TWAI_MODE_NO_ACK;
+    this->initSerialProtocol(config);
+    
+    // Define message(s) to send
+    this->setTransactionPeriodic(msg, 1000);
+  };
+
+  void shutdown() {
+    this->endSerialProtocol();
+  };
+
+private:
+  twai_message_t* msg;
+  void onMsgRcv(twai_message_t* pMsg) override {
+    int val = pMsg->data[0];
+    this->setIntegerValue(&current, val+1);
+  };
+};
+
 
 // Define the Device child class
 class DeviceListener : public Device
@@ -51,7 +88,7 @@ private:
 
 // Instantiate Devices
 DeviceListener devOne(&vc);
-DeviceListener devTwo(&vc);
+CANManager devTwo(&vc);
 
 
 
@@ -74,6 +111,22 @@ void setup() {
     vTaskDelay(100);
   }
 }
+
+
+/*
+
+Error receiving a CAN message: CAN driver is not installed
+Error receiving a CAN message
+Error receiving a CAN message: CAN driver is not installed
+Error receiving a CAN message
+...
+Error sending CAN message: Try to start the CAN driver
+Error sending CAN message because in listen only mode
+Error sending CAN message because of wrong parameters or sedn queue disabled
+Error receiving a CAN message: CAN driver is not installed
+Error receiving a CAN message
+Error sending CAN message: Try ...
+*/
 
 void loop()
 {

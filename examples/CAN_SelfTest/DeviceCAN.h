@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <driver/twai.h>
 #include "DeviceSerial.h"
+#include "SecuredLinkedListMap.h"
 
 
 /** Config data for the serial bus.
@@ -22,16 +23,24 @@ struct configCAN_t {
 };
 
 
-/** Map variable that connects timers with corresponding messages.
+/** Map class that connects timers with corresponding messages.
  *  Keys are FreeRTOS timer handles and values are ESP32 TWAI message
  *  pointers. The map allows a callback function to determine which
- *  message should be sent when a timer alerts.
+ *  message should be sent when a timer alerts. It's a singleton class.
  */
-SecuredLinkedListMap<TimerHandle_t, twai_message_t*> mapTimerMsg = SecuredLinkedListMap<TimerHandle_t, twai_message_t*>();
+class MapTimerMsg : public SecuredLinkedListMap<TimerHandle_t, twai_message_t*>
+{
+private:
+  static MapTimerMsg* obj;
+  MapTimerMsg() {}  //* Private constructor
+  ~MapTimerMsg() {}
+public:
+  static MapTimerMsg* getInstance();  //* Returns instance pointer
+};
 
 
 /** Base class for Devices that interact with the CAN bus.
- *  Provides functions for initialising and transmissing data on
+ *  Provides functions for initialising and transmitting data on
  *  the bus based on the DeviceSerial class. DeviceCAN instances
  *  must call `startTasks()` in their `begin()` function. At least
  *  one `DeviceCAN` instance must call `initSerialProtocol()` in
@@ -55,6 +64,7 @@ private:
   static void checkBusErrors();
 
 protected:
+  MapTimerMsg* m_pMap;
   bool setTransactionPeriodic(twai_message_t* pMsg, uint16_t interval);
   bool initSerialProtocol(configCAN_t config);
   void endSerialProtocol();
