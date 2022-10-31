@@ -26,12 +26,12 @@ Device::~Device()
  */
 void Device::onValueChanged(Parameter* pParamWithNewValue)
 {
-  if (pParamWithNewValue) {
+  /*if (pParamWithNewValue) {
     switch(pParamWithNewValue->getId()) {
       default:
         break;
     }
-  }
+  }*/
 }
 
 
@@ -122,10 +122,10 @@ void Device::onValueChangedLoop(void* pvParameters)
   for(;;) {
     // Process parameter changes until the queue is empty
     this->onValueChanged(m_paramsQueue.popWait(portMAX_DELAY)); //TODO
-    if (DEBUG) { //TODO
+    /*if (DEBUG) {
       PRINT("Debug: onValueChangedLoop free stack size: "+String(
         uxTaskGetStackHighWaterMark(NULL)))
-    }
+    }*/
   }
   vTaskDelete(NULL);
 }

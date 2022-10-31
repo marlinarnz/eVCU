@@ -10,36 +10,33 @@
  *                shall inform other Devices about switch actions
  */
 Switch::Switch(VehicleController* vc, uint8_t pin, int inputMode, ParameterBool* pParam)
-  : DevicePin(vc), m_pin(pin), m_pinMode(inputMode), m_pParam(pParam)
+  : DevicePin(vc, pin, SWITCH_DEBOUNCE_MS, inputMode, CHANGE),
+    m_pParam(pParam)
 {}
 
 
-/** The destructor calls shutdown.
+/** The destructor does nothing.
  */
 Switch::~Switch()
-{
-  this->shutdown();
-}
+{}
 
 
-/** Start tasks and pins.
+/** Start tasks.
  *  Choose the `onValueChangedLoop` task as small as possible while
  *  the other task should accomodate all Devices interested. Pin
- *  mode parameters were given in the constructor.
+ *  mode parameters were already handled in the parent class
+ *  constructor.
  */
 void Switch::begin()
 {
-  this->startTasks(2048, 8192);
-  pinMode(this->m_pin, this->m_pinMode);
+  this->startTasks(4096, 8192);
 }
 
 
-/** Detach the interrupt on the switch pin 
+/** At shutdown, nothing happens.
  */
 void Switch::shutdown()
-{
-  detachInterrupt(m_pin);
-}
+{}
 
 
 /** Notify other Devices about the switch status change.

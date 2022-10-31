@@ -1,29 +1,49 @@
 #include "DevicePin.h"
 
 
-/** The constructor inits the additional task handle and calls Device().
+/** The constructor attaches the interrupt.
+ *  @param pController: VehicleController instance passed to Device
+ *  @param pin: GPIO pin for the interrupt
+ *  @param debounce: minimum millis between two interrupt yields
+ *  @param pinMode: INPUT, INPUT_PULLUP, INPUT_PULLDOWN
+ *  @param interruptMode: at pin voltage LOW, CHANGE, RISING, FALLING
  */
-DevicePin::DevicePin(VehicleController* pController)
-  : Device(pController), m_taskHandleOnPinInterrupt(NULL)
-{}
+DevicePin::DevicePin(VehicleController* pController, uint8_t pin, int debounce, int inputMode, int interruptMode)
+  : Device(pController), m_taskHandleOnPinInterrupt(NULL),
+    m_pin(pin), m_debounce(debounce)
+{
+  pinMode(this->m_pin, inputMode);
+  attachInterrupt(this->m_pin, std::bind(&DevicePin::isr,this), interruptMode);
+}
 
 
-/** The destructor deletes tasks.
+/** The destructor deletes tasks and detaches the interrupt.
  */
 DevicePin::~DevicePin()
 {
+  detachInterrupt(this->m_pin);
   vTaskDelete(m_taskHandleOnPinInterrupt);
 }
 
 
-/** Get the handle for the onPinInterruptLoop task.
- *  Useful for equipping global ISR functions, if they are defined
- *  after the DevicePin object is instantiated.
- *  @return handle for the onPinInterruptLoop task
+/** ISR that invokes the onPinInterruptLoop task.
+ *  Uses the ESP32 FunctionalInterrupt to attach class member
+ *  functions to Arduino pin interrupts.
+ *  FunctionalInterrupt use discussion: https://stackoverflow.com/questions/56389249/how-to-use-a-c-member-function-as-an-interrupt-handler-in-arduino
+ *  Using Glue routines: https://arduino.stackexchange.com/questions/89173/attach-the-arduino-isr-function-to-the-class-member
  */
-TaskHandle_t DevicePin::getTaskHandle()
-{
-  return m_taskHandleOnPinInterrupt;
+void ARDUINO_ISR_ATTR DevicePin::isr() {
+  if(millis() - this->m_lastPinInterrupt > this->m_debounce) {
+    this->m_lastPinInterrupt = millis();
+    // Notify the object's task
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    vTaskNotifyGiveFromISR(this->m_taskHandleOnPinInterrupt,
+                           &xHigherPriorityTaskWoken);
+    // Trigger a context change
+    if(xHigherPriorityTaskWoken) {
+      portYIELD_FROM_ISR();
+    }
+  }
 }
 
 
@@ -47,10 +67,10 @@ void DevicePin::onPinInterruptLoop(void* pvParameters)
     // Wait for a notification from an ISR
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY); //TODO
     this->onPinInterrupt();
-    if (DEBUG) { //TODO
+    /*if (DEBUG) {
       PRINT("Debug: onPinInterruptLoop free stack size: "+String(
         uxTaskGetStackHighWaterMark(NULL)))
-    }
+    }*/
   }
   vTaskDelete(NULL);
 }

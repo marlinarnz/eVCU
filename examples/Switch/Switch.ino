@@ -61,27 +61,6 @@ Switch devOne(&vc, ISR_PIN, INPUT_PULLUP, &paramSwitch);
 DeviceListener devTwo(&vc);
 
 
-
-
-// Here comes the ISR (after the objects are initialised)
-volatile long lastPinInterrupt = 0;
-void IRAM_ATTR pinInterrupt() {
-  if(millis() - lastPinInterrupt > 400) {
-    lastPinInterrupt = millis();
-    
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    vTaskNotifyGiveFromISR(devOne.getTaskHandle(),
-                           &xHigherPriorityTaskWoken);
-    // Trigger a context change
-    if(xHigherPriorityTaskWoken) {
-      portYIELD_FROM_ISR();
-    }
-  }
-}
-
-
-
-
 void setup() {
   // Preparations
   Serial.begin(9600); // Start the Serial monitor
@@ -94,8 +73,6 @@ void setup() {
   
   devTwo.begin();
   devOne.begin();
-  
-  attachInterrupt(ISR_PIN, pinInterrupt, CHANGE); // Now we can attach an interrupt
   
   Serial.println("===== Starting the test =====\n");
   Serial.println("Device two reacts to the input observation of Device one \n"+
