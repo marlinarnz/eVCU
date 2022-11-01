@@ -6,7 +6,6 @@
  */
 
 #include <Arduino.h>
-#include <Constants.h>
 #include <Parameter.h>
 #include <VehicleController.h>
 #include <Device.h>
@@ -25,9 +24,14 @@ public:
   CANManager(VehicleController* vc) : DeviceCAN(vc), msg(NULL) {
     // Define message
     msg = new twai_message_t;
+    msg->extd = 0;
+    msg->rtr = 0;
+    msg->ss = 0;
+    msg->self = 1; // self reception request
+    msg->dlc_non_comp = 0;
+    msg->reserved = 0;
     msg->data_length_code = 1;
     msg->identifier = 0x1;
-    msg->self = 1; // self reception request
     msg->data[0] = 0;
   };
   void begin() {
@@ -35,6 +39,8 @@ public:
     this->startTasks(8000, 8000);
     configCAN_t config;
     config.mode = TWAI_MODE_NO_ACK;
+    config.txPin = GPIO_NUM_17;
+    config.rxPin = GPIO_NUM_16;
     this->initSerialProtocol(config);
     
     // Define message(s) to send
@@ -43,13 +49,17 @@ public:
 
   void shutdown() {
     this->endSerialProtocol();
+    delete msg;
   };
 
 private:
   twai_message_t* msg;
   void onMsgRcv(twai_message_t* pMsg) override {
-    int val = pMsg->data[0];
-    this->setIntegerValue(&current, val+1);
+    this->setIntegerValue(&current, pMsg->data[0]);
+    msg->data[0]++;
+  };
+  void onRemoteFrameRcv(twai_message_t* pMsg) override {
+    Serial.println("Why?!");
   };
 };
 
@@ -112,21 +122,6 @@ void setup() {
   }
 }
 
-
-/*
-
-Error receiving a CAN message: CAN driver is not installed
-Error receiving a CAN message
-Error receiving a CAN message: CAN driver is not installed
-Error receiving a CAN message
-...
-Error sending CAN message: Try to start the CAN driver
-Error sending CAN message because in listen only mode
-Error sending CAN message because of wrong parameters or sedn queue disabled
-Error receiving a CAN message: CAN driver is not installed
-Error receiving a CAN message
-Error sending CAN message: Try ...
-*/
 
 void loop()
 {

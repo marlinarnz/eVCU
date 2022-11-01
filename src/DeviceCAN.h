@@ -62,6 +62,7 @@ private:
   static bool sendTransaction(twai_message_t* pMsg);
   static void timerCallbackSendTransaction(TimerHandle_t xTimer);
   static void checkBusErrors();
+  twai_mode_t m_busMode;
 
 protected:
   MapTimerMsg* m_pMap;

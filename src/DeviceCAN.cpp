@@ -16,7 +16,7 @@ MapTimerMsg* MapTimerMsg::getInstance()
 /** Constructor calls the parent constructor.
  */
 DeviceCAN::DeviceCAN(VehicleController* vc)
-  : DeviceSerial(vc), m_pMap(NULL)
+  : DeviceSerial(vc), m_pMap(NULL), m_busMode(TWAI_MODE_LISTEN_ONLY)
 {
   m_pMap = MapTimerMsg::getInstance();
 }
@@ -35,12 +35,18 @@ void DeviceCAN::waitForSerialEvent()
       // Check if the message is remote or normal and forward
       if (msg.rtr) this->onRemoteFrameRcv(&msg);
       else this->onMsgRcv(&msg);
+      break;
     case ESP_ERR_TIMEOUT:
       // Check for driver errors
       DeviceCAN::checkBusErrors();
+      break;
     case ESP_ERR_INVALID_STATE:
       PRINT("Error receiving a CAN message: CAN driver is not installed")
       vTaskDelay(pdMS_TO_TICKS(5));
+      break;
+    case ESP_ERR_INVALID_ARG:
+      PRINT("Error receiving a CAN message: Invalid message argument")
+      break;
     default:
       PRINT("Error receiving a CAN message")
       break;
@@ -123,15 +129,19 @@ bool DeviceCAN::sendTransaction(twai_message_t* pMsg)
     case ESP_OK:
       return true;
     case ESP_ERR_TIMEOUT:
+		  PRINT("Warning: CAN bus message transmission timed out after 5ms")
       // Check the bus
       DeviceCAN::checkBusErrors();
+      break;
     case ESP_ERR_INVALID_STATE:
       // Try to start the protocol and send again
       PRINT("Error sending CAN message: Try to start the CAN driver")
       if (twai_start() == ESP_OK) DeviceCAN::sendTransaction(pMsg);
       else DeviceCAN::checkBusErrors();
+      break;
     case ESP_ERR_NOT_SUPPORTED:
-      PRINT("Error sending CAN message because in listen only mode")
+      PRINT("Error sending CAN message because in wrong mode")
+      break;
     default:
       PRINT("Error sending CAN message because of wrong parameters or send queue disabled")
       break;
@@ -160,6 +170,8 @@ void DeviceCAN::timerCallbackSendTransaction(TimerHandle_t xTimer)
  */
 bool DeviceCAN::initSerialProtocol(configCAN_t config)
 {
+  // Set the bus mode of this device
+  this->m_busMode = config.mode;
   // Initialise configuration structures using macro initialisers
   twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(
     config.txPin,
@@ -193,6 +205,7 @@ bool DeviceCAN::initSerialProtocol(configCAN_t config)
       } else {
           PRINT("Error starting CAN driver: not in stopped state")
       }
+	  break;
 
     // Cases where the initialisation went wrong: log an error
     case ESP_ERR_INVALID_STATE:
@@ -200,8 +213,10 @@ bool DeviceCAN::initSerialProtocol(configCAN_t config)
       return true;
     case ESP_ERR_INVALID_ARG:
       PRINT("Error: Wrong arguments for initialising the CAN driver")
+	  break;
     case ESP_ERR_NO_MEM:
       PRINT("Error initialising the CAN bus: out of memory")
+	  break;
     default:
       PRINT("Error initialising the CAN bus")
       break;
@@ -250,6 +265,7 @@ void DeviceCAN::endSerialProtocol()
         if (status.state != TWAI_STATE_STOPPED) {
           this->endSerialProtocol();
         }
+		break;
       default:
         break;
     }
@@ -278,6 +294,7 @@ void DeviceCAN::checkBusErrors()
           PRINT("Error starting CAN bus: Driver not installed")
           return;
         }
+		break;
       case TWAI_STATE_RUNNING:
         break;
       case TWAI_STATE_BUS_OFF:
@@ -290,6 +307,7 @@ void DeviceCAN::checkBusErrors()
           PRINT("Error recovering the CAN bus")
           return;
         }
+		break;
       case TWAI_STATE_RECOVERING:
         // Wait until it is recovered
         PRINT("Info: Waiting for CAN bus to recover")
@@ -299,8 +317,10 @@ void DeviceCAN::checkBusErrors()
         }
         twai_start();
         PRINT("Info: CAN bus recovered and started")
+		break;
       default:
-        break;
+        PRINT("Warning: CAN bus in unknown status")
+		break;
     }
   }
   else {
@@ -315,8 +335,10 @@ void DeviceCAN::checkBusErrors()
       if ()
     case ESP_ERR_TIMEOUT:
       PRINT("Debug: No CAN bus alert occured")
+	  break;
     default:
       PRINT("Error reading CAN bus alerts")
+	  break;
   }*/
 }
 
