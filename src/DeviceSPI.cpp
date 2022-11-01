@@ -278,14 +278,18 @@ bool DeviceSPI::initSerialProtocol(configSPI_t config)
         PRINT("Warning: no slave defined for SPI communication")
         return true;
       }
+	  break;
 
     // Cases where the initialisation went wrong return false and log an error
     case ESP_ERR_INVALID_STATE:
       PRINT("Error initialising the SPI bus: host is already in use")
+	  break;
     case ESP_ERR_NOT_FOUND:
       PRINT("Error initialising the SPI bus: no DMA channel available, but demanded in configuration file")
+	  break;
     case ESP_ERR_NO_MEM:
       PRINT("Error initialising the SPI bus: out of memory")
+	  break;
     default:
       PRINT("Error initialising the SPI bus. Check the pins.")
       break;
