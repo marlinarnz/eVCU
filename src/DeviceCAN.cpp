@@ -129,7 +129,7 @@ bool DeviceCAN::sendTransaction(twai_message_t* pMsg)
     case ESP_OK:
       return true;
     case ESP_ERR_TIMEOUT:
-		  PRINT("Warning: CAN bus message transmission timed out after 5ms")
+		  PRINT("Error on the CAN bus (while send): speed, ACK or error count")
       // Check the bus
       DeviceCAN::checkBusErrors();
       break;
