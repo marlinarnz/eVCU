@@ -8,9 +8,11 @@
  *                   Can be `INPUT`; `INPUT_PULLUP`; `INPUT_PULLDOWN`
  *  @param pParam pointer to the ParameterBool instance that
  *                shall inform other Devices about switch actions
+ *  @param debounce minimum time between two pin interactions in ms.
+ *                  Defaults to macro `SWITCH_DEBOUNCE_MS`
  */
-Switch::Switch(VehicleController* vc, uint8_t pin, int inputMode, ParameterBool* pParam)
-  : DevicePin(vc, pin, SWITCH_DEBOUNCE_MS, inputMode, CHANGE),
+Switch::Switch(VehicleController* vc, uint8_t pin, int inputMode, ParameterBool* pParam, int debounce)
+  : DevicePin(vc, pin, debounce, inputMode, CHANGE),
     m_pParam(pParam)
 {}
 

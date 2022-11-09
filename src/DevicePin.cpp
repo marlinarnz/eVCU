@@ -1,11 +1,30 @@
 #include "DevicePin.h"
 
 
+/** ISR that invokes the onPinInterruptLoop task.
+ *  Notifies the task that was given as argument via
+ *  `attachInterruptArg()`
+ *  FunctionalInterrupt use discussion: https://stackoverflow.com/questions/56389249/how-to-use-a-c-member-function-as-an-interrupt-handler-in-arduino
+ *  @param arg: `TaskHandle_t` pointer to the task to notify
+ */
+void ARDUINO_ISR_ATTR isr(void* arg)
+{
+  // Get the task handle
+  TaskHandle_t* pTaskHandle = static_cast<TaskHandle_t*>(arg);
+  // Notify the object's task
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  vTaskNotifyGiveFromISR(*pTaskHandle,
+                         &xHigherPriorityTaskWoken);
+  // Trigger a context change
+  if(xHigherPriorityTaskWoken) portYIELD_FROM_ISR();
+}
+
+
 /** The constructor attaches the interrupt.
  *  @param pController: VehicleController instance passed to Device
  *  @param pin: GPIO pin for the interrupt
  *  @param debounce: minimum millis between two interrupt yields
- *  @param pinMode: INPUT, INPUT_PULLUP, INPUT_PULLDOWN
+ *  @param inputMode: INPUT, INPUT_PULLUP, INPUT_PULLDOWN
  *  @param interruptMode: at pin voltage LOW, CHANGE, RISING, FALLING
  */
 DevicePin::DevicePin(VehicleController* pController, uint8_t pin, int debounce, int inputMode, int interruptMode)
@@ -13,7 +32,7 @@ DevicePin::DevicePin(VehicleController* pController, uint8_t pin, int debounce, 
     m_pin(pin), m_debounce(debounce)
 {
   pinMode(this->m_pin, inputMode);
-  attachInterrupt(this->m_pin, std::bind(&DevicePin::isr,this), interruptMode);
+  attachInterruptArg(this->m_pin, isr, &m_taskHandleOnPinInterrupt, interruptMode);
 }
 
 
@@ -23,27 +42,6 @@ DevicePin::~DevicePin()
 {
   detachInterrupt(this->m_pin);
   vTaskDelete(m_taskHandleOnPinInterrupt);
-}
-
-
-/** ISR that invokes the onPinInterruptLoop task.
- *  Uses the ESP32 FunctionalInterrupt to attach class member
- *  functions to Arduino pin interrupts.
- *  FunctionalInterrupt use discussion: https://stackoverflow.com/questions/56389249/how-to-use-a-c-member-function-as-an-interrupt-handler-in-arduino
- *  Using Glue routines: https://arduino.stackexchange.com/questions/89173/attach-the-arduino-isr-function-to-the-class-member
- */
-void ARDUINO_ISR_ATTR DevicePin::isr() {
-  if(millis() - this->m_lastPinInterrupt > this->m_debounce) {
-    this->m_lastPinInterrupt = millis();
-    // Notify the object's task
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    vTaskNotifyGiveFromISR(this->m_taskHandleOnPinInterrupt,
-                           &xHigherPriorityTaskWoken);
-    // Trigger a context change
-    if(xHigherPriorityTaskWoken) {
-      portYIELD_FROM_ISR();
-    }
-  }
 }
 
 
@@ -66,7 +64,10 @@ void DevicePin::onPinInterruptLoop(void* pvParameters)
   for(;;) {
     // Wait for a notification from an ISR
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY); //TODO
-    this->onPinInterrupt();
+    if(millis() - this->m_lastPinInterrupt > this->m_debounce) {
+      this->m_lastPinInterrupt = millis();
+      this->onPinInterrupt();
+	}
     /*if (DEBUG) {
       PRINT("Debug: onPinInterruptLoop free stack size: "+String(
         uxTaskGetStackHighWaterMark(NULL)))

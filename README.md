@@ -36,11 +36,12 @@ Have a look at the examples for custom classes and the order of instantiation in
 
 There are some pre-defined classes that can used in your project as-is:
 * `Switch`: Implements a simple I/O-switch, given a pin, a pin mode, and a `Parameter` to set.
+* `Pedal`: Implements a pedal for a throttle or a brake, given an analog pin and a `ParameterDouble` for the pedal position.
 
 Please refer to the code documentation for further details.
 
 All custom `Device`s must inherit the library functionality from a `Device` class. There are several base classes ready for use:
-* `DevicePin`: Any `Device` that uses GPIO pins can use this base class, e.g. the `Switch`.
+* `DevicePin`: Any `Device` that uses GPIO pins with interrupts can use this base class, e.g. the `Switch`.
 * `DeviceCAN`: There is one crucial device in every vehicle, which inherits from this class: the CanManager. It observes the CAN bus and sends own CAN messages based on the `Parameter`s from other `Device`s. Have a look at the DefenderAPEV528 project as an example:
 * `DeviceSPI`: If there is a `Device` that uses SPI communication, it should inherit from this class, as it implements all relevant functionalities.
 
@@ -48,9 +49,9 @@ Further information is to be found in the corresponding code documentation.
 
 There are some functions, which must be defined in every custom `Device`:
 * `begin()`: There are three blocks to be executed in order:
-** Start the threads by calling `startTasks()` of the parent class.
-** Register for value changes of `Parameter`s by calling `this->registerForValueChanged(<Paramter ID>)`.
-** Any logic that should be executed at vehicle start (e.g. installing drivers or setting timers).
+	* Start the threads by calling `startTasks()` of the parent class.
+	* Register for value changes of `Parameter`s by calling `this->registerForValueChanged(<Paramter ID>)`.
+	* Any logic that should be executed at vehicle start (e.g. installing drivers or setting timers).
 * `shutdown()`: Some parent classes require uninstallation of hardware drivers. See the code documentation.
 * `onValueChanged()`: You must implement a logic for the reaction to value changee of every `Parameter` this `Device` is subscribed to (e.g. use a switch-case logic).
 * Additionally, some base classes require the implementation of further functions. See the code documentation.
