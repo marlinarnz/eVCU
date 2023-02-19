@@ -12,7 +12,10 @@ DeviceSerial::DeviceSerial(VehicleController* pController)
  */
 DeviceSerial::~DeviceSerial()
 {
-  vTaskDelete(m_taskHandleOnSerialEvent);
+  if(m_taskHandleOnSerialEvent != NULL){
+    vTaskDelete(m_taskHandleOnSerialEvent);
+    m_taskHandleOnSerialEvent = NULL;
+  }
 }
 
 

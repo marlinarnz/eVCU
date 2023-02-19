@@ -39,7 +39,7 @@ private:
 
 protected:
   // Functions to be used by derived classes
-  bool registerParameter(Parameter* pParam);
+  bool registerParameter(int id);
   bool registerForValueChanged(int id);
   bool unregisterForValueChanged(int id);
   //DEPRECTED: bool unregisterForAll() { return m_pController->unregisterForAll(this); }

@@ -15,7 +15,10 @@ Device::Device(VehicleController* pController)
  */
 Device::~Device()
 {
-  vTaskDelete(m_taskHandleOnValueChanged);
+  if(m_taskHandleOnValueChanged != NULL){
+    vTaskDelete(m_taskHandleOnValueChanged);
+    m_taskHandleOnValueChanged = NULL;
+  }
 }
 
 
@@ -102,12 +105,12 @@ bool Device::setDoubleValue(ParameterDouble* pParam, double dValue)
  *  This function can be used, if the Parameter cannot be registered
  *  using the VehicleController instance directly. A registered
  *  Parameter can be subscribed to by other Devices.
- *  @param pParam pointer to a Parameter that should be accessible to other Devices
+ *  @param id unique ID of a Parameter that should be accessible to other Devices
  *  @return boolean if the VehicleController was successful
  */
-bool Device::registerParameter(Parameter* pParam)
+bool Device::registerParameter(int id)
 {
-  return m_pController->registerParameter(pParam);
+  return m_pController->registerParameter(id);
 }
 
 
@@ -121,7 +124,7 @@ void Device::onValueChangedLoop(void* pvParameters)
 {
   for(;;) {
     // Process parameter changes until the queue is empty
-    this->onValueChanged(m_paramsQueue.popWait(portMAX_DELAY)); //TODO
+    this->onValueChanged(m_paramsQueue.popWait(portMAX_DELAY));
     /*if (DEBUG) {
       PRINT("Debug: onValueChangedLoop free stack size: "+String(
         uxTaskGetStackHighWaterMark(NULL)))

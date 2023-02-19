@@ -4,21 +4,21 @@
 /** Registers a new Parameter in the map.
  *  If the ID of the given Parameter has not been registered yet,
  *  it gets a new entry with empty list of registered Devices.
- *  @param pNewParam pointer to the new Parameter
+ *  @param id unique identifier of the new Parameter
  *  @return boolean whether the Parameter was registered successfully or already exists
  */
-bool MapParameterToDevices::addParameterToMap(Parameter* pNewParam)
+bool MapParameterToDevices::addParameterToMap(int id)
 {
   // See whether the parameter is already registered and break in this case
-  if (this->has(pNewParam->getId())) {
-    if (DEBUG) {PRINT("Parameter already added with ID " + String(pNewParam->getId()))}
+  if (this->has(id)) {
+    if (DEBUG) {PRINT("Parameter already added with ID " + String(id))}
     return false;
   }
   else {
     // Create the new list on the heap
     SecuredLinkedList<Device*>* devicesList = new SecuredLinkedList<Device*>();
     // Add it to the end of this list
-    this->put(pNewParam->getId(), devicesList);
+    this->put(id, devicesList);
     return true;
   }
 }
@@ -35,8 +35,8 @@ bool MapParameterToDevices::registerForValueChanged(Device* pCallingDevice, int 
 {
   // Find the given ID and add the device to its list
   if (!this->has(id)) {
-    if (DEBUG) {PRINT("No parameter found with ID " + String(id))}
-    return false;
+    if (DEBUG) {PRINT("Registering parameter with ID " + String(id))}
+    if (!this->addParameterToMap(id)) return false;
   }
   // See whether the device is already registered
   for (unsigned int i=0; i<this->get(id)->size(); i++) {

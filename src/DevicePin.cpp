@@ -41,7 +41,10 @@ DevicePin::DevicePin(VehicleController* pController, uint8_t pin, int debounce, 
 DevicePin::~DevicePin()
 {
   detachInterrupt(this->m_pin);
-  vTaskDelete(m_taskHandleOnPinInterrupt);
+  if(m_taskHandleOnPinInterrupt != NULL){
+    vTaskDelete(m_taskHandleOnPinInterrupt);
+    m_taskHandleOnPinInterrupt = NULL;
+  }
 }
 
 

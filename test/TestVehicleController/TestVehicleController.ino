@@ -1,9 +1,9 @@
 #line 2 "TestVehicleController.ino"
 
 #include <AUnitVerbose.h>
-#include "Parameter.h"
-#include "VehicleController.h"
-#include "Device.h"
+#include <Parameter.h>
+#include <VehicleController.h>
+#include <Device.h>
 
 using aunit::TestRunner;
 
@@ -18,7 +18,7 @@ class DeviceMock : public Device
 {
 public:
   DeviceMock(VehicleController* vc) : Device(vc) {};
-  void begin() { PRINT("called begin") };
+  void begin() { this->startTasks(8000); PRINT("called begin") };
   void shutdown() { PRINT("called shutdown") };
 private:
   void onValueChanged(Parameter* pParamWithNewValue) { PRINT("called onValueChanged") };
@@ -56,50 +56,34 @@ test(VehicleControllerTest, test_constructor_heap) {
 }
 
 
-// DEPRECTED
-/*test(VehicleControllerTest, test_registerDevice) {
-  VehicleController vc;
-  DeviceMock dev = DeviceMock(&vc);
-  assertTrue(vc.registerDevice(&dev));
-}
-
-
-test(VehicleControllerTest, test_registerDevice_doubleOccurence) {
-  VehicleController vc;
-  DeviceMock dev = DeviceMock(&vc);
-  vc.registerDevice(&dev);
-  assertFalse(vc.registerDevice(&dev));
-}*/
-
-
 test(VehicleControllerTest, test_registerParameter_) {
   VehicleController vc;
-  assertTrue(vc.registerParameter(&param));
+  assertTrue(vc.registerParameter(0));
 }
 
 
 test(VehicleControllerTest, test_registerParameter_paramBool) {
   VehicleController vc;
-  assertTrue(vc.registerParameter(&paramBool));
+  assertTrue(vc.registerParameter(1));
 }
 
 
 test(VehicleControllerTest, test_registerParameter_paramInt) {
   VehicleController vc;
-  assertTrue(vc.registerParameter(&paramInt));
+  assertTrue(vc.registerParameter(2));
 }
 
 
 test(VehicleControllerTest, test_registerParameter_paramDouble) {
   VehicleController vc;
-  assertTrue(vc.registerParameter(&paramDouble));
+  assertTrue(vc.registerParameter(3));
 }
 
 
 test(VehicleControllerTest, test_registerParameter_doubleId) {
   VehicleController vc;
-  vc.registerParameter(&param);
-  assertFalse(vc.registerParameter(&param));
+  vc.registerParameter(0);
+  assertFalse(vc.registerParameter(0));
 }
 
 
@@ -107,23 +91,24 @@ test(VehicleControllerTest, test_registerForValueChanged_idCorrect) {
   VehicleController vc;
   DeviceMock dev = DeviceMock(&vc);
   int id = param.getId();
-  vc.registerParameter(&param);
+  vc.registerParameter(0);
   assertTrue(vc.registerForValueChanged(&dev, id));
 }
 
 
-test(VehicleControllerTest, test_registerForValueChanged_idNotCorrect) {
-  VehicleController vc;
-  DeviceMock dev = DeviceMock(&vc);
-  assertFalse(vc.registerForValueChanged(&dev, 100));
-}
+// DEPRECTED
+//test(VehicleControllerTest, test_registerForValueChanged_idNotCorrect) {
+//  VehicleController vc;
+//  DeviceMock dev = DeviceMock(&vc);
+//  assertFalse(vc.registerForValueChanged(&dev, 100));
+//}
 
 
 test(VehicleControllerTest, test_unregisterForValueChanged_idCorrect) {
   VehicleController vc;
   DeviceMock dev = DeviceMock(&vc);
   int id = param.getId();
-  vc.registerParameter(&param);
+  vc.registerParameter(0);
   vc.registerForValueChanged(&dev, id);
   assertTrue(vc.unregisterForValueChanged(&dev, id));
 }
@@ -133,47 +118,16 @@ test(VehicleControllerTest, test_unregisterForValueChanged_idNotCorrect) {
   VehicleController vc;
   DeviceMock dev = DeviceMock(&vc);
   int id = param.getId();
-  vc.registerParameter(&param);
+  vc.registerParameter(0);
   vc.registerForValueChanged(&dev, id);
   assertFalse(vc.unregisterForValueChanged(&dev, 100));
 }
 
 
-// DEPRECTED
-/*test(VehicleControllerTest, test_unregisterForAll_deviceRegistered) {
-  VehicleController vc;
-  DeviceMock dev = DeviceMock(&vc);
-  int id = param.getId();
-  vc.registerParameter(&param);
-  vc.registerForValueChanged(&dev, id);
-  assertTrue(vc.unregisterForAll(&dev));
-}
-
-
-test(VehicleControllerTest, test_unregisterForAll_deviceRegisteredTwice) {
-  VehicleController vc;
-  DeviceMock dev = DeviceMock(&vc);
-  int id1 = param.getId();
-  int id2 = paramBool.getId();
-  vc.registerParameter(&param);
-  vc.registerParameter(&paramBool);
-  vc.registerForValueChanged(&dev, id1);
-  vc.registerForValueChanged(&dev, id2);
-  assertTrue(vc.unregisterForAll(&dev));
-}
-
-
-test(VehicleControllerTest, test_unregisterForAll_deviceNotRegistered) {
-  VehicleController vc;
-  DeviceMock dev = DeviceMock(&vc);
-  assertFalse(vc.unregisterForAll(&dev));
-}*/
-
-
 test(VehicleControllerTest, test_setBooleanValue_paramCorrect) {
   VehicleController vc;
   DeviceMock dev = DeviceMock(&vc);
-  vc.registerParameter(&paramBool);
+  vc.registerParameter(1);
   assertTrue(vc.setBooleanValue(&dev, &paramBool, true));
 }
 
@@ -181,7 +135,7 @@ test(VehicleControllerTest, test_setBooleanValue_paramCorrect) {
 test(VehicleControllerTest, test_setIntegerValue_paramCorrect) {
   VehicleController vc;
   DeviceMock dev = DeviceMock(&vc);
-  vc.registerParameter(&paramInt);
+  vc.registerParameter(2);
   assertTrue(vc.setIntegerValue(&dev, &paramInt, 5));
 }
 
@@ -189,7 +143,7 @@ test(VehicleControllerTest, test_setIntegerValue_paramCorrect) {
 test(VehicleControllerTest, test_setDoubleValue_paramCorrect) {
   VehicleController vc;
   DeviceMock dev = DeviceMock(&vc);
-  vc.registerParameter(&paramDouble);
+  vc.registerParameter(3);
   assertTrue(vc.setDoubleValue(&dev, &paramDouble, 0.1));
 }
 
@@ -218,7 +172,7 @@ test(VehicleControllerTest, test_setDoubleValue_paramNotRegistered) {
 test(VehicleControllerTest, test_setBooleanValue_sameValueAsBefore) {
   VehicleController vc;
   DeviceMock dev = DeviceMock(&vc);
-  vc.registerParameter(&paramBool);
+  vc.registerParameter(1);
   vc.setBooleanValue(&dev, &paramBool, true);
   assertFalse(vc.setBooleanValue(&dev, &paramBool, true));
 }
@@ -227,7 +181,7 @@ test(VehicleControllerTest, test_setBooleanValue_sameValueAsBefore) {
 test(VehicleControllerTest, test_setIntegerValue_sameValueAsBefore) {
   VehicleController vc;
   DeviceMock dev = DeviceMock(&vc);
-  vc.registerParameter(&paramInt);
+  vc.registerParameter(2);
   vc.setIntegerValue(&dev, &paramInt, 5);
   assertFalse(vc.setIntegerValue(&dev, &paramInt, 5));
 }
@@ -236,7 +190,7 @@ test(VehicleControllerTest, test_setIntegerValue_sameValueAsBefore) {
 test(VehicleControllerTest, test_setDoubleValue_sameValueAsBefore) {
   VehicleController vc;
   DeviceMock dev = DeviceMock(&vc);
-  vc.registerParameter(&paramDouble);
+  vc.registerParameter(3);
   vc.setDoubleValue(&dev, &paramDouble, 0.6);
   assertFalse(vc.setDoubleValue(&dev, &paramDouble, 0.6));
 }

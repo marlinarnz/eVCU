@@ -18,7 +18,7 @@ class VehicleController
 public:
 	VehicleController() : m_map(MapParameterToDevices()) {};
 	~VehicleController() {};
-  bool registerParameter(Parameter* pParam);
+  bool registerParameter(int id);
   bool registerForValueChanged(Device* pCallingDevide, int id);
 	bool unregisterForValueChanged(Device* pCallingDevide, int id);
 	//bool unregisterForAll(Device* pCallingDevide);

@@ -28,20 +28,19 @@ public:
     this->initSerialProtocol(config);
 
     // Set a periodic message
-    twai_message_t* msg = new twai_message_t;
-    msg->identifier = 0x1806E5F5;
+    /*twai_message_t* msg = new twai_message_t;
+    msg->identifier = 0x1806E5F0;
     msg->data_length_code = 1;
     msg->rtr = 0;
     msg->self = 0;
     msg->ss = 0;
     msg->extd = 1;
     msg->data[0] = 1;
-    //this->setTransactionPeriodic(msg, 1000);
+    this->setTransactionPeriodic(msg, 1000);*/
   };
 
   void shutdown() {
     this->endSerialProtocol();
-	delete msg;
   };
 
 private:

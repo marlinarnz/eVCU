@@ -56,9 +56,6 @@ DeviceListener devTwo(&vc);
 void setup() {
   // Preparations
   Serial.begin(9600); // Start the Serial monitor
-  Serial.println("===== Starting the initialisation =====\n");
-  
-  vc.registerParameter(&current); // Register Parameters
   
   Serial.println("===== Starting up the devices =====\n");
   

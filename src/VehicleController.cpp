@@ -3,12 +3,12 @@
 
 
 /** Registers a Parameter in the map.
- *  @param pParam pointer to a Parameter
+ *  @param id unique identifier of a Parameter
  *  @return boolean whether the registration was successful
  */
-bool VehicleController::registerParameter(Parameter* pParam)
+bool VehicleController::registerParameter(int id)
 {
-  return m_map.addParameterToMap(pParam);
+  return m_map.addParameterToMap(id);
 }
 
 

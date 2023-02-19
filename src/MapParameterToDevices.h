@@ -21,7 +21,7 @@ class MapParameterToDevices : public SecuredLinkedListMap<int, SecuredLinkedList
 public:
   MapParameterToDevices() {};
   ~MapParameterToDevices() {};
-  bool addParameterToMap(Parameter* pNewParam);
+  bool addParameterToMap(int id);
   bool registerForValueChanged(Device* pCallingDevice, int id);
   bool unregisterForValueChanged(Device* pCallingDevice, int id);
   //bool unregisterDevice(Device* pCallingDevice);
