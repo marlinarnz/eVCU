@@ -32,6 +32,8 @@ Switch::~Switch()
 void Switch::begin()
 {
   this->startTasks(4096, 8192);
+  // Init the switch position
+  this->setBooleanValue(m_pParam, digitalRead(m_pin));
 }
 
 
