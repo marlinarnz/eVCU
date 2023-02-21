@@ -8,7 +8,9 @@
 
 /** Base class for Devices that handle input pin events.
  *  Uses the Device base class and adds a task for one input
- *  observation through an interrupt service routine (ISR).
+ *  observation through an interrupt service routine (ISR). The
+ *  ISR must be attached to the pin in the child class's `begin()`
+ *  function by calling `attachISR()`.
  */
 class DevicePin : public Device
 {
@@ -22,8 +24,10 @@ private:
   //void ARDUINO_ISR_ATTR isr(void* arg);
   int m_debounce;
   long m_lastPinInterrupt;
+  int m_interruptMode;
 
 protected:
+  void attachISR();
   void startTasks(uint16_t stackSizeOnValueChanged=configMINIMAL_STACK_SIZE*4,
                   uint16_t stackSizeOnPinInterrupt=4096);
   static void startOnPinInterruptLoop(void* _this);

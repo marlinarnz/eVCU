@@ -27,10 +27,13 @@ Switch::~Switch()
  *  Choose the `onValueChangedLoop` task as small as possible while
  *  the other task should accomodate all Devices interested. Pin
  *  mode parameters were already handled in the parent class
- *  constructor.
+ *  constructor, but the interrupt must be attached at begin.
  */
 void Switch::begin()
 {
+  // Attach the interrupt on the pin given in the constructor
+  this->attachISR();
+  // Start tasks
   this->startTasks(4096, 8192);
   // Init the switch position
   this->setBooleanValue(m_pParam, digitalRead(m_pin));
