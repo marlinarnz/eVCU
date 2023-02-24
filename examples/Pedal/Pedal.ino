@@ -9,7 +9,7 @@
 #include <Pedal.h>
 
 
-#define PEDAL_PIN GPIO_NUM_32
+#define PEDAL_PIN 32
 
 
 // Instantiate the VehicleController and the vehicle's Parameters
@@ -54,7 +54,7 @@ DeviceListener devTwo(&vc);
 
 void setup() {
   // Preparations
-  Serial.begin(9600); // Start the Serial monitor
+  Serial.begin(115200); // Start the Serial monitor
   
   Serial.println("===== Starting up the devices =====\n");
   

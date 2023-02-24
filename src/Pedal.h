@@ -2,20 +2,19 @@
 #define PEDAL_H
 
 #include <Arduino.h>
-#include "DevicePin.h"
+#include "DeviceLoop.h"
 
 
 // Number of positions in the smoothen array
-#define N_PREV_VALS 10
+#define N_PREV_VALS 5
 
 
 /** Class for pedals (throttle or brake).
  *  Use GPIO 32 or 33 for analog position measure via ESP32's ADC.
- *  An ISR triggers reading the analog pin only when the given
- *  interval since the last read has passed. The Pedal writes
- *  the position into the given Parameter instance (0 to 99.7 %).
+ *  The Pedal writes the position into the given Parameter instance
+ *  (0 to 99.7 %) every given time interval.
  */
-class Pedal : public DevicePin
+class Pedal : public DeviceLoop
 {
 public:
   Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDouble* pParam);
@@ -24,11 +23,12 @@ public:
   void shutdown();
   
 private:
-  //void onValueChanged(Parameter* pParamWithNewValue);
-  void onPinInterrupt();
+  void onValueChanged(Parameter* pParamWithNewValue) {};
+  void onLoop();
   float smoothen(float newPosition);
-  float prevVals[N_PREV_VALS];
+  float m_prevVals[N_PREV_VALS];
   ParameterDouble* m_pParam;
+  uint8_t m_pin;
 };
 
 #endif
