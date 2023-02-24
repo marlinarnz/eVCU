@@ -29,10 +29,8 @@ void ARDUINO_ISR_ATTR isr(void* arg)
  */
 DevicePin::DevicePin(VehicleController* pController, uint8_t pin, int debounce, int inputMode, int interruptMode)
   : Device(pController), m_taskHandleOnPinInterrupt(NULL),
-    m_pin(pin), m_debounce(debounce), m_interruptMode(interruptMode)
-{
-  pinMode(this->m_pin, inputMode);
-}
+    m_pin(pin), m_debounce(debounce), m_inputMode(inputMode), m_interruptMode(interruptMode)
+{}
 
 
 /** The destructor deletes tasks and detaches the interrupt.
@@ -48,10 +46,12 @@ DevicePin::~DevicePin()
 
 
 /** Attach the ISR to the pin.
- *  Must be called in the child class's `begin()` function.
+ *  Must be called in the child class's `begin()` function. First
+ *  sets the pin mode, then attaches the ISR.
  */
 void DevicePin::attachISR()
 {
+  pinMode(this->m_pin, m_inputMode);
   attachInterruptArg(this->m_pin, isr, &m_taskHandleOnPinInterrupt, m_interruptMode);
 }
 

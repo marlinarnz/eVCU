@@ -24,6 +24,7 @@ private:
   //void ARDUINO_ISR_ATTR isr(void* arg);
   int m_debounce;
   long m_lastPinInterrupt;
+  int m_inputMode;
   int m_interruptMode;
 
 protected:
