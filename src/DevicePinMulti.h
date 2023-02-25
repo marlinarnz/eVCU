@@ -42,6 +42,7 @@ DevicePinMulti<N>::DevicePinMulti(VehicleController* pController, uint8_t pins[N
   for (int i=0; i<N; i++) {
     m_pins[i] = pins[i];
     m_inputModes[i] = inputModes[i];
+    if (i > 0) pinMode(m_pins[i], m_inputModes[i]);
   }
 }
 
@@ -59,14 +60,12 @@ DevicePinMulti<N>::~DevicePinMulti()
 
 
 /** Attach the ISR to each pin.
- *  Must be called in the child class's `begin()` function. First
- *  sets the pin mode, then attaches the ISR.
+ *  Must be called in the child class's `begin()` function.
  */
 template <int N>
 void DevicePinMulti<N>::attachISR()
 {
   for (int i=0; i<N; i++) {
-    pinMode(m_pins[i], m_inputModes[i]);
     attachInterruptArg(m_pins[i], isrPin, &m_taskHandleOnPinInterrupt, m_interruptMode);
   }
 }
