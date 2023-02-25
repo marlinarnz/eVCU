@@ -7,7 +7,7 @@
  *  FunctionalInterrupt use discussion: https://stackoverflow.com/questions/56389249/how-to-use-a-c-member-function-as-an-interrupt-handler-in-arduino
  *  @param arg: `TaskHandle_t` pointer to the task to notify
  */
-void ARDUINO_ISR_ATTR isr(void* arg)
+void ARDUINO_ISR_ATTR isrPin(void* arg)
 {
   // Get the task handle
   TaskHandle_t* pTaskHandle = static_cast<TaskHandle_t*>(arg);
@@ -52,7 +52,7 @@ DevicePin::~DevicePin()
 void DevicePin::attachISR()
 {
   pinMode(this->m_pin, m_inputMode);
-  attachInterruptArg(this->m_pin, isr, &m_taskHandleOnPinInterrupt, m_interruptMode);
+  attachInterruptArg(this->m_pin, isrPin, &m_taskHandleOnPinInterrupt, m_interruptMode);
 }
 
 

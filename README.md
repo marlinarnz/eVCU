@@ -33,13 +33,16 @@ When starting a project with this library, you must define your hardware-specifi
 There are some pre-defined classes that can used in your project as-is:
 * `Switch`: Implements a simple I/O-switch, given a pin, a pin mode, and a `Parameter` to set.
 * `Pedal`: Implements a pedal for a throttle or a brake, given an analog pin and a `ParameterDouble` for the pedal position.
+* `IgnitionSwitch`: Observes three pins (KL75, KL15, KL50) to implement a standard ignition switch, writing into a `ParameterInt`.
 
 Please refer to the code documentation for further details.
 
 All custom `Device`s must inherit the library functionality from a `Device` class. There are several base classes ready for use:
-* `DevicePin`: Any `Device` that uses GPIO pins with interrupts can use this base class, e.g. the `Switch`.
+* `DevicePin`: Any `Device` that uses one GPIO pin with interrupt can use this base class, e.g. the `Switch`.
+* `DevicePinMulti`: Same functionality as `DevicePin`, but it observes multiple pins with interrupt.
 * `DeviceCAN`: There is one crucial device in every vehicle, which inherits from this class: the CanManager. It observes the CAN bus and sends own CAN messages based on the `Parameter`s from other `Device`s. Have a look at the [flagship project](https://github.com/marlinarnz/eVCU_DefenderAPEV528) as an example.
 * `DeviceSPI`: If there is a `Device` that uses SPI communication, it should inherit from this class, as it implements all relevant functionalities.
+* `DeviceLoop`: In case polling is needed (e.g. for a pedal), this class executes a function any given time interval.
 
 Further information is to be found in the corresponding code documentation.
 
