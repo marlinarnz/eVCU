@@ -130,7 +130,7 @@ void DevicePin::startTasks(uint16_t stackSizeOnValueChanged,
     "onPinInterrupt", // Name for debugging
     (uint16_t)(stackSizeOnPinInterrupt/4),
     this, // Parameters pointer for the function; must be static
-    1, // Priority (1 is lowest)
+    3, // Priority (1 is lowest)
     &m_taskHandleOnPinInterrupt, // task handle
     1 // CPU core
   );

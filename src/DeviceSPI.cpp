@@ -374,7 +374,7 @@ void DeviceSPI::startTasks(uint16_t stackSizeOnValueChanged,
     "sendTransaction", // Name for debugging
     (uint16_t)(4096/4),
     this, // Parameters pointer for the function; must be static
-    3, // Priority (1 is lowest)
+    2, // Priority (1 is lowest)
     &m_taskHandleSendTransaction, // task handle
     1 // CPU core
   );
