@@ -34,6 +34,7 @@ There are some pre-defined classes that can used in your project as-is:
 * `Switch`: Implements a simple I/O-switch, given a pin, a pin mode, and a `Parameter` to set.
 * `Pedal`: Implements a pedal for a throttle or a brake, given an analog pin and a `ParameterDouble` for the pedal position.
 * `IgnitionSwitch`: Observes three pins (KL75, KL15, KL50) to implement a standard ignition switch, writing into a `ParameterInt`.
+* `Contactors`: Manages the main and precharge contactors with corresponding relay pins and `Parameter`s indicating ignition status and vehicle readiness. Optionally observes contactors for correct functionlity.
 
 Please refer to the code documentation for further details.
 

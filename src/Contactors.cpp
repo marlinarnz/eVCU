@@ -139,7 +139,8 @@ void Contactors::onValueChanged(Parameter* pParam)
 {
   if (pParam->getId() == m_pParamIgnition->getId()) {
     if (m_pParamIgnition->getVal() == m_keyPositionStart
-        && m_pParamVehicleReady->getVal())
+        && m_pParamVehicleReady->getVal()
+		&& !m_pParamMainConn->getVal())
     {
       // start the precharge process
       digitalWrite(m_pinAux, m_on);
