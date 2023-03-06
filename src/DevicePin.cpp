@@ -74,9 +74,13 @@ void DevicePin::onPinInterruptLoop(void* pvParameters)
 {
   for(;;) {
     // Wait for a notification from an ISR
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY); //TODO
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     if(millis() - this->m_lastPinInterrupt > this->m_debounce) {
       this->m_lastPinInterrupt = millis();
+      // Make sure to read the right pin status:
+      // execute the function right now and after the debounce
+      this->onPinInterrupt();
+      vTaskDelay(pdMS_TO_TICKS(this->m_debounce));
       this->onPinInterrupt();
 	}
     /*if (DEBUG) {
