@@ -47,7 +47,7 @@ protected:
   bool setDoubleValue(ParameterDouble* pParam, double dValue);
   bool setIntegerValue(ParameterInt* pParam, int nValue);
   
-  virtual void startTasks(uint16_t stackSize=4096);    // Can be defined in derived class
+  virtual void startTasks(uint16_t stackSize=4096, uint8_t core=1);    // Can be defined in derived class
   TaskHandle_t m_taskHandleOnValueChanged;
   static void startOnValueChangedLoop(void* _this);
 };

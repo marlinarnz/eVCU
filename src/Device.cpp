@@ -168,8 +168,10 @@ void Device::startOnValueChangedLoop(void* _this)
  *  stack sizes in words (i.e. stack depth), which corresponds
  *  to 1/4th of the stack size in bytes on 32bit-systems.
  *  @param stackSize size of task stack in bytes. Default is 4096
+ *  @param core (optional) number of the CPU core to run tasks.
+ *              Default is 1
  */
-void Device::startTasks(uint16_t stackSize)
+void Device::startTasks(uint16_t stackSize, uint8_t core)
 {
   xTaskCreatePinnedToCore(
     this->startOnValueChangedLoop, // function name
@@ -178,7 +180,7 @@ void Device::startTasks(uint16_t stackSize)
     this, // Parameters pointer for the function; must be static
     1, // Priority (1 is lowest)
     &m_taskHandleOnValueChanged, // task handle
-    1 // CPU core
+    core // CPU core
   );
   if (m_taskHandleOnValueChanged == NULL) {
     PRINT("Fatal: failed to create task onValueChanged")

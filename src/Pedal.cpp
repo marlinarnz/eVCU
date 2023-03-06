@@ -28,6 +28,9 @@ Pedal::Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDoub
   analogSetPinAttenuation(pin, ADC_11db);
   // Set the ADC resolution in bits (9=511 to 12=4095)
   analogReadResolution(ADC_WIDTH);
+
+  // Set pin mode
+  //pinMode(pin, INPUT);
 }
 
 

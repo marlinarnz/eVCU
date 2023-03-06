@@ -21,7 +21,8 @@ private:
 
 protected:
   virtual void startTasks(uint16_t stackSizeOnValueChanged=4096,
-                          uint16_t stackSizeOnSerialEvent=4096);
+                          uint16_t stackSizeOnSerialEvent=4096,
+                          uint8_t core=1);
   static void startOnSerialEventLoop(void* _this);
   TaskHandle_t m_taskHandleOnSerialEvent;
 };

@@ -349,10 +349,13 @@ void DeviceCAN::checkBusErrors()
  *         stack in bytes. Default is 4096
  *  @param stackSizeOnPinInterrupt size of onPinInterruptLoop task
  *         stack in bytes. Default is 4096
+ *  @param core (optional) number of the CPU core to run tasks.
+ *              Default is 1
  */
 void DeviceCAN::startTasks(uint16_t stackSizeOnValueChanged,
-                           uint16_t stackSizeOnSerialEvent)
+                           uint16_t stackSizeOnSerialEvent,
+                           uint8_t core)
 {
   // Call parent function to start the rest of the tasks
-  DeviceSerial::startTasks(stackSizeOnValueChanged, stackSizeOnSerialEvent);
+  DeviceSerial::startTasks(stackSizeOnValueChanged, stackSizeOnSerialEvent, core);
 }

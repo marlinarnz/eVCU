@@ -70,7 +70,8 @@ protected:
   bool initSerialProtocol(configCAN_t config);
   void endSerialProtocol();
   virtual void startTasks(uint16_t stackSizeOnValueChanged=4096,
-                          uint16_t stackSizeOnSerialEvent=4096);
+                          uint16_t stackSizeOnSerialEvent=4096,
+                          uint8_t core=1);
 };
 
 #endif

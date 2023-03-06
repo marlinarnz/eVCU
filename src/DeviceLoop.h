@@ -23,7 +23,8 @@ private:
 
 protected:
   void startTasks(uint16_t stackSizeOnValueChanged=configMINIMAL_STACK_SIZE*4,
-                  uint16_t stackSizeLoop=4096);
+                  uint16_t stackSizeLoop=4096,
+                  uint8_t core=1);
   static void startLoopLoop(void* _this);
   TaskHandle_t m_taskHandleLoop;
 };

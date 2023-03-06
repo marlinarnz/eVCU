@@ -58,7 +58,7 @@ void DeviceSerial::startOnSerialEventLoop(void* _this)
 }
 
 
-/** Starts tasks for processing value changes and hardware inputs.
+/** Starts tasks from `Device` and hardware inputs.
  *  Must be called in the derived class's `begin()` function. FreeRTOS
  *  tasks use stack sizes in words (i.e. stack depth), which
  *  corresponds to 1/4th of the stack size in bytes on 32bit-systems.
@@ -66,22 +66,14 @@ void DeviceSerial::startOnSerialEventLoop(void* _this)
  *         stack in bytes. Default is 4096
  *  @param stackSizeOnPinInterrupt size of onPinInterruptLoop task
  *         stack in bytes. Default is 4096
+ *  @param core (optional) number of the CPU core to run tasks.
+ *              Default is 1
  */
 void DeviceSerial::startTasks(uint16_t stackSizeOnValueChanged,
-                              uint16_t stackSizeOnSerialEvent)
+                              uint16_t stackSizeOnSerialEvent,
+                              uint8_t core)
 {
-  xTaskCreatePinnedToCore(
-    this->startOnValueChangedLoop, // function name
-    "onValueChanged", // Name for debugging
-    (uint16_t)(stackSizeOnValueChanged/4),
-    this, // Parameters pointer for the function; must be static
-    1, // Priority (1 is lowest)
-    &m_taskHandleOnValueChanged, // task handle
-    1 // CPU core
-  );
-  if (m_taskHandleOnValueChanged == NULL) {
-    PRINT("Fatal: failed to create task onValueChangedLoop")
-  }
+  Device::startTasks(stackSizeOnValueChanged, core);
 
   xTaskCreatePinnedToCore(
     this->startOnSerialEventLoop, // function name
@@ -90,7 +82,7 @@ void DeviceSerial::startTasks(uint16_t stackSizeOnValueChanged,
     this, // Parameters pointer for the function; must be static
     1, // Priority (1 is lowest)
     &m_taskHandleOnSerialEvent, // task handle
-    1 // CPU core
+    core // CPU core
   );
   if (m_taskHandleOnSerialEvent == NULL) {
     PRINT("Fatal: failed to create task onSerialEventLoop")

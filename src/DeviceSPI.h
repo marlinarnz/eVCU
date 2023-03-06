@@ -78,7 +78,8 @@ protected:
   void endSerialProtocol();
   void setTransactionPeriodic(uint16_t interval, void* dataBuf, uint8_t len, uint8_t transId);
   virtual void startTasks(uint16_t stackSizeOnValueChanged=4096,
-                          uint16_t stackSizeOnSerialEvent=4096);
+                          uint16_t stackSizeOnSerialEvent=4096,
+                          uint8_t core=1);
   spi_device_handle_t m_handleSlave1;
   uint8_t m_host;
   transactionDescr_t* m_pTransOnce;

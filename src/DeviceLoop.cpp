@@ -62,22 +62,14 @@ void DeviceLoop::startLoopLoop(void* _this)
  *         stack in bytes. Default is 4096
  *  @param stackSizeLoop size of onPinInterruptLoop task
  *         stack in bytes. Default is 4096
+ *  @param core (optional) number of the CPU core to run tasks.
+ *              Default is 1
  */
 void DeviceLoop::startTasks(uint16_t stackSizeOnValueChanged,
-                            uint16_t stackSizeLoop)
+                            uint16_t stackSizeLoop,
+                            uint8_t core)
 {
-  xTaskCreatePinnedToCore(
-    this->startOnValueChangedLoop, // function name
-    "onValueChanged", // Name for debugging
-    (uint16_t)(stackSizeOnValueChanged/4),
-    this, // Parameters pointer for the function; must be static
-    1, // Priority (1 is lowest)
-    &m_taskHandleOnValueChanged, // task handle
-    1 // CPU core
-  );
-  if (m_taskHandleOnValueChanged == NULL) {
-    PRINT("Fatal: failed to create task onValueChangedLoop")
-  }
+  Device::startTasks(stackSizeOnValueChanged, core);
 
   xTaskCreatePinnedToCore(
     this->startLoopLoop, // function name
@@ -86,7 +78,7 @@ void DeviceLoop::startTasks(uint16_t stackSizeOnValueChanged,
     this, // Parameters pointer for the function; must be static
     1, // Priority (1 is lowest)
     &m_taskHandleLoop, // task handle
-    1 // CPU core
+    core // CPU core
   );
   if (m_taskHandleLoop == NULL) {
     PRINT("Fatal: failed to create task onLoopLoop")

@@ -28,7 +28,8 @@ private:
 protected:
   void attachISR();
   void startTasks(uint16_t stackSizeOnValueChanged=configMINIMAL_STACK_SIZE*4,
-                  uint16_t stackSizeOnPinInterrupt=4096);
+                  uint16_t stackSizeOnPinInterrupt=4096,
+                  uint8_t core=1);
   static void startOnPinInterruptLoop(void* _this);
   TaskHandle_t m_taskHandleOnPinInterrupt;
   uint8_t m_pin;

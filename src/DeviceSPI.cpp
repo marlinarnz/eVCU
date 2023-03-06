@@ -361,9 +361,12 @@ void DeviceSPI::deleteTrans(transactionDescr_t* trans)
  *         stack in bytes. Default is 4096
  *  @param stackSizeOnPinInterrupt size of onPinInterruptLoop task
  *         stack in bytes. Default is 4096
+ *  @param core (optional) number of the CPU core to run tasks.
+ *              Default is 1
  */
 void DeviceSPI::startTasks(uint16_t stackSizeOnValueChanged,
-                           uint16_t stackSizeOnSerialEvent)
+                           uint16_t stackSizeOnSerialEvent,
+                           uint8_t core)
 {
   // Create the transaction queue
   this->m_queueHandleSendTransaction = xQueueCreate(2, sizeof(transactionDescr_t*));
@@ -376,12 +379,12 @@ void DeviceSPI::startTasks(uint16_t stackSizeOnValueChanged,
     this, // Parameters pointer for the function; must be static
     2, // Priority (1 is lowest)
     &m_taskHandleSendTransaction, // task handle
-    1 // CPU core
+    core // CPU core
   );
   if (m_taskHandleSendTransaction == NULL) {
     PRINT("Fatal: failed to create task sendTransactionLoop")
   }
 
   // Call parent function to start the rest of the tasks
-  DeviceSerial::startTasks(stackSizeOnValueChanged, stackSizeOnSerialEvent);
+  DeviceSerial::startTasks(stackSizeOnValueChanged, stackSizeOnSerialEvent, core);
 }
