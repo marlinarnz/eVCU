@@ -124,27 +124,36 @@ bool DeviceCAN::setTransactionPeriodic(twai_message_t* pMsg, uint16_t interval)
  */
 bool DeviceCAN::sendTransaction(twai_message_t* pMsg)
 {
-  // Queue the message for transmission
-  switch (twai_transmit(pMsg, pdMS_TO_TICKS(5))) {
-    case ESP_OK:
-      return true;
-    case ESP_ERR_TIMEOUT:
-		  PRINT("Error on the CAN bus (while send): speed, ACK or error count")
-      // Check the bus
-      DeviceCAN::checkBusErrors();
-      break;
-    case ESP_ERR_INVALID_STATE:
-      // Try to start the protocol and send again
-      PRINT("Error sending CAN message: Try to start the CAN driver")
-      if (twai_start() == ESP_OK) DeviceCAN::sendTransaction(pMsg);
-      else DeviceCAN::checkBusErrors();
-      break;
-    case ESP_ERR_NOT_SUPPORTED:
-      PRINT("Error sending CAN message because in wrong mode")
-      break;
-    default:
-      PRINT("Error sending CAN message because of wrong parameters or send queue disabled")
-      break;
+  // Send only if not in recovery state
+  twai_status_info_t status;
+  if (twai_get_status_info(&status) == ESP_OK) {
+    if (status.state != TWAI_STATE_RECOVERING) {
+          
+      // Queue the message for transmission
+      switch (twai_transmit(pMsg, pdMS_TO_TICKS(5))) {
+        case ESP_OK:
+          return true;
+        case ESP_ERR_TIMEOUT:
+          PRINT("Error sending CAN message: ACK missing or TX queue full")
+          // Check the bus
+          DeviceCAN::checkBusErrors();
+          break;
+        case ESP_ERR_INVALID_STATE:
+          // Try to start the protocol and send again
+          PRINT("Error sending CAN message: wrong state or bus-off mode entered")
+          DeviceCAN::checkBusErrors();
+          if (twai_transmit(pMsg, pdMS_TO_TICKS(5)) == ESP_OK) {
+            return true;
+          }
+          break;
+        case ESP_ERR_NOT_SUPPORTED:
+          PRINT("Error sending CAN message because in wrong mode")
+          break;
+        default:
+          PRINT("Error sending CAN message because of wrong parameters or send queue disabled")
+          break;
+      }
+    }
   }
   return false;
 }
@@ -205,7 +214,7 @@ bool DeviceCAN::initSerialProtocol(configCAN_t config)
       } else {
           PRINT("Error starting CAN driver: not in stopped state")
       }
-	  break;
+      break;
 
     // Cases where the initialisation went wrong: log an error
     case ESP_ERR_INVALID_STATE:
@@ -213,10 +222,10 @@ bool DeviceCAN::initSerialProtocol(configCAN_t config)
       return true;
     case ESP_ERR_INVALID_ARG:
       PRINT("Error: Wrong arguments for initialising the CAN driver")
-	  break;
+      break;
     case ESP_ERR_NO_MEM:
       PRINT("Error initialising the CAN bus: out of memory")
-	  break;
+      break;
     default:
       PRINT("Error initialising the CAN bus")
       break;
@@ -265,7 +274,7 @@ void DeviceCAN::endSerialProtocol()
         if (status.state != TWAI_STATE_STOPPED) {
           this->endSerialProtocol();
         }
-		break;
+        break;
       default:
         break;
     }
@@ -294,20 +303,20 @@ void DeviceCAN::checkBusErrors()
           PRINT("Error starting CAN bus: Driver not installed")
           return;
         }
-		break;
+        break;
       case TWAI_STATE_RUNNING:
         break;
       case TWAI_STATE_BUS_OFF:
         // Try to recover the bus
         if (twai_initiate_recovery() == ESP_OK) {
           PRINT("Info: Started CAN bus recovery")
-          vTaskDelay(pdMS_TO_TICKS(50));
+          //vTaskDelay(pdMS_TO_TICKS(1));
         }
         else {
           PRINT("Error recovering the CAN bus")
           return;
         }
-		break;
+        //break; continue with recovery
       case TWAI_STATE_RECOVERING:
         // Wait until it is recovered
         PRINT("Info: Waiting for CAN bus to recover")
@@ -315,12 +324,17 @@ void DeviceCAN::checkBusErrors()
           vTaskDelay(1);
           twai_get_status_info(&status);
         }
-        twai_start();
-        PRINT("Info: CAN bus recovered and started")
-		break;
+        // Start the driver again
+        if (twai_start() == ESP_OK) {
+          PRINT("Info: CAN bus recovered and started")
+        } else {
+          PRINT("Error recovering the CAN bus")
+          DeviceCAN::checkBusErrors();
+        }
+        break;
       default:
         PRINT("Warning: CAN bus in unknown status")
-		break;
+        break;
     }
   }
   else {
