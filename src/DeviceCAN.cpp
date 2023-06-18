@@ -38,7 +38,8 @@ void DeviceCAN::waitForSerialEvent()
       break;
     case ESP_ERR_TIMEOUT:
       // Check for driver errors
-      DeviceCAN::checkBusErrors();
+      //DeviceCAN::checkBusErrors();
+      PRINT("Warning: no CAN bus messages detected")
       break;
     case ESP_ERR_INVALID_STATE:
       PRINT("Error receiving a CAN message: CAN driver is not installed")
@@ -127,7 +128,7 @@ bool DeviceCAN::sendTransaction(twai_message_t* pMsg)
   // Send only if not in recovery state
   twai_status_info_t status;
   if (twai_get_status_info(&status) == ESP_OK) {
-    if (status.state != TWAI_STATE_RECOVERING) {
+    if (status.state == TWAI_STATE_RUNNING) {
           
       // Queue the message for transmission
       switch (twai_transmit(pMsg, pdMS_TO_TICKS(5))) {
@@ -139,12 +140,9 @@ bool DeviceCAN::sendTransaction(twai_message_t* pMsg)
           DeviceCAN::checkBusErrors();
           break;
         case ESP_ERR_INVALID_STATE:
-          // Try to start the protocol and send again
+          // Try to start the protocol
           PRINT("Error sending CAN message: wrong state or bus-off mode entered")
           DeviceCAN::checkBusErrors();
-          if (twai_transmit(pMsg, pdMS_TO_TICKS(5)) == ESP_OK) {
-            return true;
-          }
           break;
         case ESP_ERR_NOT_SUPPORTED:
           PRINT("Error sending CAN message because in wrong mode")
@@ -153,6 +151,11 @@ bool DeviceCAN::sendTransaction(twai_message_t* pMsg)
           PRINT("Error sending CAN message because of wrong parameters or send queue disabled")
           break;
       }
+    }
+    // if not running, check the bus
+    else {
+      PRINT("Error sending CAN message: wrong state")
+      DeviceCAN::checkBusErrors();
     }
   }
   return false;
@@ -268,7 +271,7 @@ void DeviceCAN::endSerialProtocol()
         // Wait until it is recovered
         PRINT("Info: Waiting for CAN bus to recover before deinitialisation")
         while (status.state == TWAI_STATE_RECOVERING) {
-          vTaskDelay(1);
+          vTaskDelay(pdMS_TO_TICKS(5));
           twai_get_status_info(&status);
         }
         if (status.state != TWAI_STATE_STOPPED) {
@@ -308,20 +311,21 @@ void DeviceCAN::checkBusErrors()
         break;
       case TWAI_STATE_BUS_OFF:
         // Try to recover the bus
+        vTaskDelay(pdMS_TO_TICKS(10));
         if (twai_initiate_recovery() == ESP_OK) {
           PRINT("Info: Started CAN bus recovery")
-          //vTaskDelay(pdMS_TO_TICKS(1));
         }
         else {
-          PRINT("Error recovering the CAN bus")
+          PRINT("Error starting CAN bus recovery")
           return;
         }
         //break; continue with recovery
       case TWAI_STATE_RECOVERING:
         // Wait until it is recovered
         PRINT("Info: Waiting for CAN bus to recover")
+        twai_get_status_info(&status);
         while (status.state == TWAI_STATE_RECOVERING) {
-          vTaskDelay(1);
+          vTaskDelay(pdMS_TO_TICKS(5));
           twai_get_status_info(&status);
         }
         // Start the driver again
