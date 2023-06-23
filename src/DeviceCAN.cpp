@@ -1,6 +1,13 @@
 #include "DeviceCAN.h"
 
 
+/** Semaphore for sending transactions.
+ *  Only one task can send transactions on the CAN bus by taking the
+ *  semaphore and giving it after the send has completed.
+ */
+static SemaphoreHandle_t txTaskSemaphore = xSemaphoreCreateBinary();
+
+
 MapTimerMsg* MapTimerMsg::obj{NULL};
 
 /** Returns the instance pointer of the timer-message map class.
@@ -170,7 +177,9 @@ bool DeviceCAN::sendTransaction(twai_message_t* pMsg)
 void DeviceCAN::timerCallbackSendTransaction(TimerHandle_t xTimer)
 {
   MapTimerMsg* map = MapTimerMsg::getInstance(); // get Singleton instance
+  xSemaphoreTake(txTaskSemaphore, portMAX_DELAY);
   DeviceCAN::sendTransaction(map->get(xTimer));
+  xSemaphoreGive(txTaskSemaphore);
 }
 
 
@@ -213,6 +222,7 @@ bool DeviceCAN::initSerialProtocol(configCAN_t config)
       // Start TWAI driver
       if (twai_start() == ESP_OK) {
           PRINT("Info: CAN driver started")
+          xSemaphoreGive(txTaskSemaphore);
           return true;
       } else {
           PRINT("Error starting CAN driver: not in stopped state")
@@ -222,6 +232,7 @@ bool DeviceCAN::initSerialProtocol(configCAN_t config)
     // Cases where the initialisation went wrong: log an error
     case ESP_ERR_INVALID_STATE:
       PRINT("Debug: CAN driver is already installed")
+      xSemaphoreGive(txTaskSemaphore);
       return true;
     case ESP_ERR_INVALID_ARG:
       PRINT("Error: Wrong arguments for initialising the CAN driver")
@@ -242,6 +253,8 @@ bool DeviceCAN::initSerialProtocol(configCAN_t config)
  */
 void DeviceCAN::endSerialProtocol()
 {
+  xSemaphoreTake(txTaskSemaphore, portMAX_DELAY);
+
   // Delete all timers in the map
   SecuredLinkedListMapElement<TimerHandle_t, twai_message_t*> elementsList[this->m_pMap->size()];
   this->m_pMap->getAll(elementsList);
