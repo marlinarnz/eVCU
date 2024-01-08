@@ -142,7 +142,7 @@ bool DeviceCAN::sendTransaction(twai_message_t* pMsg)
         case ESP_OK:
           return true;
         case ESP_ERR_TIMEOUT:
-          PRINT("Error sending CAN message: ACK missing or TX queue full")
+          //PRINT("Error sending CAN message: ACK missing or TX queue full")
           // Check the bus
           DeviceCAN::checkBusErrors();
           break;
