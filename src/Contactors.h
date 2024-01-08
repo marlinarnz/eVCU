@@ -24,11 +24,10 @@ public:
              uint8_t pinMain, uint8_t pinAux, uint16_t prechargeTime,
              ParameterBool* pParamMainConn, ParameterBool* pParamAuxConn,
              ParameterInt* pParamIgnition, ParameterBool* pParamVehicleReady,
-             uint8_t keyPositionStart=2, uint16_t loopTime=100,
+             uint8_t keyPositionStart=2, bool onIsHigh=true, uint16_t loopTime=100,
              uint8_t pinCheckMain=0, uint8_t pinCheckAux=0,
              ParameterBool* pParamMainFault=&mainRelayFaultDefault,
-             ParameterBool* pParamAuxFault=&auxRelayFaultDefault,
-             bool onIsHigh=true);
+             ParameterBool* pParamAuxFault=&auxRelayFaultDefault);
   ~Contactors();
   void begin();
   void shutdown();

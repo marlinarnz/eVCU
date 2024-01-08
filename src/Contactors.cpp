@@ -22,6 +22,8 @@ ParameterBool auxRelayFaultDefault(991);
  *  @param pParamVehicleReady `Parameter` giving the vehicle readiness
  *  @param keyPositionStart (optional) the key position at which the
  *                          contactors are closed, default `2`
+ *  @param onIsHigh (optional) the physical pin value for the relay pins,
+ *                  set to `false` to switch relais at ´LOW`
  *  @param loopTime (optional) time for status checks in ms
  *  @param pinCheckMain (optional) pin for the main contactor fault line
  *  @param pinCheckAux (optional) pin for the precharge contactor fault line
@@ -29,8 +31,6 @@ ParameterBool auxRelayFaultDefault(991);
  *                         `Parameter` to report main contactor faults
  *  @param pParamAuxFault (only required when pinCheckAux given)
  *                        `Parameter` to report precharge contactor faults
- *  @param onIsHigh (optional) the physical pin value for the relay pins,
- *                  set to `false` to switch relais at ´LOW`
  */
 Contactors::Contactors(VehicleController* vc,
                        uint8_t pinMain,
@@ -40,13 +40,13 @@ Contactors::Contactors(VehicleController* vc,
                        ParameterBool* pParamAuxConn,
                        ParameterInt* pParamIgnition,
                        ParameterBool* pParamVehicleReady,
-                       uint8_t keyPositionStart,
+                       uint8_t keyPositionStart,,
+                       bool onIsHigh
                        uint16_t loopTime,
                        uint8_t pinCheckMain,
                        uint8_t pinCheckAux,
                        ParameterBool* pParamMainFault,
-                       ParameterBool* pParamAuxFault,
-                       bool onIsHigh)
+                       ParameterBool* pParamAuxFault)
   : DeviceLoop(vc, loopTime),
     m_pinMain(pinMain), m_pinAux(pinAux), m_prechargeTime(prechargeTime),
     m_pParamMainConn(pParamMainConn), m_pParamAuxConn(pParamAuxConn),
