@@ -17,7 +17,7 @@
 class Pedal : public DeviceLoop
 {
 public:
-  Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDouble* pParam);
+  Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDouble* pParam, ParameterBool* pParamInhibit);
   ~Pedal();
   void begin();
   void shutdown();
@@ -28,6 +28,7 @@ private:
   float smoothen(float newPosition);
   float m_prevVals[N_PREV_VALS];
   ParameterDouble* m_pParam;
+  ParameterBool* m_pParamInhibit;
   uint8_t m_pin;
 };
 

@@ -12,9 +12,9 @@
  *  @param pParam pointer to the ParameterDouble instance that
  *                informs other Devices about pedal position in %
  */
-Pedal::Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDouble* pParam)
+Pedal::Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDouble* pParam, ParameterBool* pParamInhibit)
   : DeviceLoop(vc, readInterval),
-    m_pParam(pParam), m_pin(pin), m_prevVals{}
+    m_pParam(pParam), m_pParamInhibit(pParamInhibit), m_pin(pin), m_prevVals{}
 {
   // Set all values in smoothening array to 0
   for (int i=0; i<N_PREV_VALS; i++) {
@@ -67,7 +67,11 @@ void Pedal::onLoop()
   // Calculate the value
   double position = (analogRead(m_pin) * 99.7 / ADC_RESOLUTION);
   // Set the value
-  this->setDoubleValue(m_pParam, smoothen(position));
+  if (!m_pParamInhibit->getVal()) {
+    this->setDoubleValue(m_pParam, smoothen(position));
+  } else {
+    this->setDoubleValue(m_pParam, 0.0);
+  }
 }
 
 
