@@ -24,7 +24,8 @@ public:
              uint8_t pinMain, uint8_t pinAux, uint16_t prechargeTime,
              ParameterBool* pParamMainConn, ParameterBool* pParamAuxConn,
              ParameterInt* pParamIgnition, ParameterBool* pParamVehicleReady,
-             uint8_t keyPositionStart=2, bool onIsHigh=true, uint16_t loopTime=100,
+             uint8_t keyPositionStart=2, uint8_t keyPositionStop=0,
+			 bool onIsHigh=true, uint16_t loopTime=100,
              uint8_t pinCheckMain=0, uint8_t pinCheckAux=0,
              ParameterBool* pParamMainFault=&mainRelayFaultDefault,
              ParameterBool* pParamAuxFault=&auxRelayFaultDefault);
@@ -44,6 +45,7 @@ private:
   ParameterInt* m_pParamIgnition;
   ParameterBool* m_pParamVehicleReady;
   uint8_t m_keyPositionStart;
+  uint8_t m_keyPositionStop;
   uint8_t m_pinCheckMain;
   uint8_t m_pinCheckAux;
   ParameterBool* m_pParamMainFault;

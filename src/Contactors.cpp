@@ -22,6 +22,8 @@ ParameterBool auxRelayFaultDefault(991);
  *  @param pParamVehicleReady `Parameter` giving the vehicle readiness
  *  @param keyPositionStart (optional) the key position at which the
  *                          contactors are closed, default `2`
+ *  @param keyPositionStop (optional) the key position at which the
+ *                         contactors are opened again, default `0`
  *  @param onIsHigh (optional) the physical pin value for the relay pins,
  *                  set to `false` to switch relais at ´LOW`
  *  @param loopTime (optional) time for status checks in ms
@@ -41,6 +43,7 @@ Contactors::Contactors(VehicleController* vc,
                        ParameterInt* pParamIgnition,
                        ParameterBool* pParamVehicleReady,
                        uint8_t keyPositionStart,
+                       uint8_t keyPositionStop,
                        bool onIsHigh,
                        uint16_t loopTime,
                        uint8_t pinCheckMain,
@@ -51,7 +54,7 @@ Contactors::Contactors(VehicleController* vc,
     m_pinMain(pinMain), m_pinAux(pinAux), m_prechargeTime(prechargeTime),
     m_pParamMainConn(pParamMainConn), m_pParamAuxConn(pParamAuxConn),
     m_pParamIgnition(pParamIgnition), m_pParamVehicleReady(pParamVehicleReady),
-    m_keyPositionStart(keyPositionStart),
+    m_keyPositionStart(keyPositionStart), m_keyPositionStop(keyPositionStop),
     m_pinCheckMain(pinCheckMain), m_pinCheckAux(pinCheckAux),
     m_pParamMainFault(pParamMainFault), m_pParamAuxFault(pParamAuxFault),
     m_precharging(0), m_prechargeStartTime(0)
@@ -148,12 +151,13 @@ void Contactors::onValueChanged(Parameter* pParam)
       m_precharging = true;
       m_prechargeStartTime = millis();
     }
-    else if (m_pParamIgnition->getVal() < m_keyPositionStart) {
+    else if (m_pParamIgnition->getVal() == m_keyPositionStop) {
       // close the contactors
       digitalWrite(m_pinMain, m_off);
       digitalWrite(m_pinAux, m_off);
       this->setBooleanValue(m_pParamMainConn, false);
       this->setBooleanValue(m_pParamAuxConn, false);
+	  m_precharging = false;
     }
   }
   
@@ -164,12 +168,13 @@ void Contactors::onValueChanged(Parameter* pParam)
       digitalWrite(m_pinAux, m_off);
       this->setBooleanValue(m_pParamMainConn, false);
       this->setBooleanValue(m_pParamAuxConn, false);
+	  m_precharging = false;
     }
   }
 }
 
 
-/** Observe eprecharge time and fault check lines.
+/** Observe precharge time and fault check lines.
  *  Once the precharge resistor has connected and the vehicle is
  *  precharging, the loop waits until the precharge time is over
  *  and connects the main contactor. If fault check pins were given
