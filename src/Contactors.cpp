@@ -132,6 +132,7 @@ void Contactors::emergencyPowerOff()
   digitalWrite(m_pinAux, m_off);
   this->setBooleanValue(m_pParamMainConn, false);
   this->setBooleanValue(m_pParamAuxConn, false);
+  m_precharging = false;
 }
 
 

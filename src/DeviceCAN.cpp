@@ -88,11 +88,20 @@ void DeviceCAN::onRemoteFrameRcv(twai_message_t* pMsg)
  *  @param pMsg pointer to an ESP32 TWAI driver message. Must be
  *              on the heap
  *  @param interval interval between message transmission in ms
+ *  @param pCounterByte pointer to the byte of the msg's counter
+ *  @param counterLSB least significant bit of the counter
+ *  @param counterLen length (bits) of the counter
+ *  @param checksumByte byte number of the checksum (full byte)
  *  @return bool if the message was transmitted successfully in
  *               case the interval was 0, or if the timer was set
  *               up successfully otherwise
  */
-bool DeviceCAN::setTransactionPeriodic(twai_message_t* pMsg, uint16_t interval)
+bool DeviceCAN::setTransactionPeriodic(twai_message_t* pMsg,
+                                       uint16_t interval,
+                                       uint8_t* pCounterByte,
+                                       uint8_t counterLSB,
+                                       uint8_t counterLen,
+                                       uint8_t checksumByte)
 {
   // If the interval is 0, send the message once
   if (interval == 0) {
@@ -109,7 +118,13 @@ bool DeviceCAN::setTransactionPeriodic(twai_message_t* pMsg, uint16_t interval)
     if (xTimer != NULL) {
       // Save the message and its timer in the map with the timer
       // handle as key
-      this->m_pMap->put(xTimer, pMsg);
+      msgData_t* pMsgData = new msgData_t;
+      pMsgData->pMsg = pMsg;
+      pMsgData->pCountByte = pCounterByte;
+      pMsgData->countLSB = counterLSB;
+      pMsgData->countLen = counterLen;
+      pMsgData->checkByte = checksumByte;
+      this->m_pMap->put(xTimer, pMsgData);
       // Start the timer
       if (xTimerStart(xTimer, 1) != pdPASS) {
         PRINT("Error starting the timer for CAN message " + String(pMsg->identifier))
@@ -169,6 +184,46 @@ bool DeviceCAN::sendTransaction(twai_message_t* pMsg)
 }
 
 
+/** Increment the message's counter
+ *  Use the byte, LSB and length, if specified.
+ *  @param pMsgData pointer to the message's data struct
+ */
+void DeviceCAN::incrementCounter(msgData_t* pMsgData) {
+  if (pMsgData->pCountByte != NULL && pMsgData->countLen > 0) {
+    // Create a mask for the specified bits
+    uint8_t mask = ((1 << pMsgData->countLen) - 1) << (pMsgData->countLSB % 8);
+    // Extract the specified bits
+    uint8_t bits = (*(pMsgData->pCountByte) & mask) >> (pMsgData->countLSB % 8);
+    // Increment the bits and check for overflow
+    bits++;
+    if (bits >= (1 << pMsgData->countLen)) {
+        bits = 0; // Set to zero on overflow
+    }
+    // Clear the specified bits in the original byte and set the incremented bits
+    *(pMsgData->pCountByte) = (*(pMsgData->pCountByte) & ~mask) | (bits << (pMsgData->countLSB % 8));
+  }
+}
+
+
+/** Update the checksum
+ *  If the byte is specified, sum all bytes of the message
+ *  except this one and XOR this sum with 0xFF. Assume an 8
+ *  byte message.
+ *  @param pMsgData pointer to the message's data struct
+ */
+void DeviceCAN::updateChecksum(msgData_t* pMsgData) {
+  if (pMsgData->checkByte < 8) {
+    uint8_t sum = 0;
+    for (uint8_t i=0; i < 8; i++) {
+      if (i != pMsgData->checkByte) {
+        sum = sum + pMsgData->pMsg->data[i];
+      }
+    }
+    pMsgData->pMsg->data[pMsgData->checkByte] = sum ^ 0xFF;
+  }
+}
+
+
 /** Callback function for the send timer.
  *  Calls `sendTransaction` with the message pointer saved in
  *  the map for the given timer handle.
@@ -178,7 +233,9 @@ void DeviceCAN::timerCallbackSendTransaction(TimerHandle_t xTimer)
 {
   MapTimerMsg* map = MapTimerMsg::getInstance(); // get Singleton instance
   xSemaphoreTake(txTaskSemaphore, portMAX_DELAY);
-  DeviceCAN::sendTransaction(map->get(xTimer));
+  DeviceCAN::incrementCounter(map->get(xTimer));
+  DeviceCAN::updateChecksum(map->get(xTimer));
+  DeviceCAN::sendTransaction(map->get(xTimer)->pMsg);
   xSemaphoreGive(txTaskSemaphore);
 }
 
@@ -255,11 +312,14 @@ void DeviceCAN::endSerialProtocol()
 {
   xSemaphoreTake(txTaskSemaphore, portMAX_DELAY);
 
-  // Delete all timers in the map
-  SecuredLinkedListMapElement<TimerHandle_t, twai_message_t*> elementsList[this->m_pMap->size()];
+  // Delete all elements in the map
+  SecuredLinkedListMapElement<TimerHandle_t, msgData_t*> elementsList[this->m_pMap->size()];
   this->m_pMap->getAll(elementsList);
   for (int i=0; i<this->m_pMap->size(); i++) {
     if (elementsList[i].key != NULL) {
+      // Delete message data struct
+      delete(m_pMap->get(elementsList[i].key));
+      // Delete timer
       xTimerDelete(elementsList[i].key, pdMS_TO_TICKS(10));
     }
   }
