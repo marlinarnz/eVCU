@@ -9,15 +9,21 @@
 
 /** Config data for the serial bus.
  *  Assigns pins, speeds etc. A functional default exists.
- *  @param txPin        TX pin to connect to the CAN transceiver as `gpio_num_t`
- *  @param rxPin        RX pin to connect to the CAN transceiver as `gpio_num_t`
+ *  @param txPin        TX pin to connect to the CAN transceiver
+ *  @param rxPin        RX pin to connect to the CAN transceiver
  *  @param mode         TWAI driver mode: `TWAI_MODE_NORMAL`,
  *                      `TWAI_MODE_NO_ACK` or `TWAI_MODE_LISTEN_ONLY`
  *  @param speed        bus speed 125, 250, 500 or 1000 kbps
  */
 struct configCAN_t {
+#ifdef GPIO_NUM_21
   gpio_num_t txPin=GPIO_NUM_21;
   gpio_num_t rxPin=GPIO_NUM_22;
+#endif
+#ifndef GPIO_NUM_21
+  gpio_num_t txPin=GPIO_NUM_14;
+  gpio_num_t rxPin=GPIO_NUM_13;
+#endif
   twai_mode_t mode=TWAI_MODE_NORMAL;
   uint32_t speed=500000;
 };
