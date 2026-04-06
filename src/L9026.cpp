@@ -2,7 +2,7 @@
 
 L9026* L9026::m_instance = nullptr;
 
-#define BASE_ADDR = 0x00
+#define BASE_ADDR 0x00
 
 
 /** Singleton instance getter
@@ -25,7 +25,7 @@ L9026* L9026::getInstance(VehicleController* vc,
   if (!m_instance) {
     // Instantiate
     m_instance = new L9026(vc, pinIdle, pinIn0, pinIn1);
-    m_instance->begin();
+    m_instance->begin(pinMOSI, pinMISO, pinSCLK, pinCS);
   }
   return m_instance;
 }
@@ -67,8 +67,12 @@ void L9026::initL9026()
 /** Start the IC
  *  Start tasks, init the L9026 and the SPI protocol.
  *  Deletes its own object instance, if SPI init failed.
+ *  @param pinMOSI pin number of MTDO
+ *  @param pinMISO pin number of MTDI
+ *  @param pinSCLK pin number of MTCK
+ *  @param pinCS pin number of MTMS
  */
-void L9026::begin()
+void L9026::begin(uint8_t pinMOSI, uint8_t pinMISO, uint8_t pinSCLK, uint8_t pinCS)
 {
   // Start the tasks before sending the first transaction
   this->startTasks(4096, 8192);
@@ -96,6 +100,13 @@ void L9026::begin()
   else {
     delete m_instance;
   }
+}
+void L9026::begin()
+{
+  // Start the tasks before sending the first transaction
+  this->startTasks(4096, 8192);
+  // Init the IC pins
+  this->initL9026();
 }
 
 
@@ -205,7 +216,7 @@ bool L9026::configureHSLS(uint8_t channel, bool highSwitch)
   if (channel > 7) {return false;}
   if ((channel < 2) && (!highSwitch)) {return false;}
   
-  if (onOff) {m_channelsHIGH |= (1 << channel);}
+  if (highSwitch) {m_channelsHIGH |= (1 << channel);}
   else {m_channelsHIGH &= ~(1 << channel);}
   
   return this->sendFrame(BASE_ADDR + 0x01, m_channelsHIGH);
@@ -234,7 +245,7 @@ bool L9026::configureBIM(uint8_t channel, bool onOff)
  *  Package the data into a frame and send it out.
  *  @param addr 5 bit address
  *  @param frame 8 bit frame with data
- *  @return boolean if the transaction was successful
+ *  @return true (frame validation not implemented)
  */
 bool L9026::sendFrame(uint8_t address, uint8_t data)
 {
@@ -244,7 +255,8 @@ bool L9026::sendFrame(uint8_t address, uint8_t data)
   buffer[0] = frame >> 8;
   buffer[1] = frame & 0xFF;
 
-  return this->setTransactionPeriodic(0, buffer, 2, address);
+  this->setTransactionPeriodic(0, buffer, 2, address);
+  return true;
 }
 
 

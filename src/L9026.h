@@ -26,6 +26,7 @@ public:
   bool configurePWM(uint8_t channel, bool pwmGEN, bool pwmLED);
   bool configureHSLS(uint8_t channel, bool highSwitch);
   bool configureBIM(uint8_t channel, bool onOff);
+  void begin(uint8_t pinMOSI, uint8_t pinMISO, uint8_t pinSCLK, uint8_t pinCS);
   void begin();
   void shutdown();
 
