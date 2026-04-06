@@ -11,10 +11,16 @@
  *  @param readInterval time in ms between two position reads
  *  @param pParam pointer to the ParameterDouble instance that
  *                informs other Devices about pedal position in %
+ *  @param map dictionary to translate voltage readings into %
+ *  @param vref ADC reference voltage
+ *  @param dividerRatio voltage divider ratio
+ *  @param pParamInhibit pointer to the ParameterBool instance
+ *                       that overwrites the pedal position with 0
  */
-Pedal::Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDouble* pParam, ParameterBool* pParamInhibit)
+Pedal::Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDouble* pParam, const SecuredLinkedListMap<double, double>& map, double vref, double dividerRatio, ParameterBool* pParamInhibit)
   : DeviceLoop(vc, readInterval),
-    m_pParam(pParam), m_pParamInhibit(pParamInhibit), m_pin(pin), m_prevVals{}
+    m_pParam(pParam), m_pParamInhibit(pParamInhibit), m_pin(pin),
+    m_map(map), m_vref(vref), m_dividerRatio(dividerRatio), m_prevVals{}
 {
   // Set all values in smoothening array to 0
   for (int i=0; i<N_PREV_VALS; i++) {
@@ -64,14 +70,14 @@ void Pedal::shutdown()
  */
 void Pedal::onLoop()
 {
-  // Calculate the value
-  double position = (analogRead(m_pin) * 99.7 / ADC_RESOLUTION);
-  // Set the value
-  if (!m_pParamInhibit->getVal()) {
-    this->setDoubleValue(m_pParam, smoothen(position));
-  } else {
-    this->setDoubleValue(m_pParam, 0.0);
+  if (m_pParamInhibit) {
+    if (m_pParamInhibit->getVal()) {
+      this->setDoubleValue(m_pParam, 0.0);
+      return;
+    }
   }
+  // Set the value
+  this->setDoubleValue(m_pParam, smoothen(mapADC(analogRead(m_pin))));
 }
 
 
@@ -103,4 +109,47 @@ float Pedal::smoothen(float newPosition)
 
   // Round to one decimal behind the comma
   return (int)(newPosition * 10) * 0.1;
+}
+
+
+/** Maps ADC value to percentage.
+ *  Converts ADC reading to voltage and performs linear interpolation
+ *  between neighbouring voltage-percentage pairs stored in m_map.
+ *  @param adc ADC reading
+ *  @return percentage value
+ */
+double Pedal::mapADC(int adc)
+{
+  int size = m_map.size();
+  if (size == 0) {return 0.0;}
+
+  // Convert ADC to voltage
+  double voltage = ((double)adc / ADC_RESOLUTION) * m_vref * m_dividerRatio;
+
+  // Copy map elements
+  SecuredLinkedListMapElement<double, double>* elements =
+    new SecuredLinkedListMapElement<double, double>[size];
+  m_map.getAll(elements);
+
+  double prevVoltage = elements[0].key;
+  double prevPercent = elements[0].value;
+
+  for (int i = 1; i < size; i++) {
+    double currVoltage = elements[i].key;
+    double currPercent = elements[i].value;
+
+    if (voltage <= currVoltage) {
+      double t = (voltage - prevVoltage) / (double)(currVoltage - prevVoltage);
+      delete[] elements;
+      return prevPercent + t * (currPercent - prevPercent);
+    }
+
+    prevVoltage = currVoltage;
+    prevPercent = currPercent;
+  }
+
+  // default to the last element in the map
+  double result = prevPercent;
+  delete[] elements;
+  return result;
 }

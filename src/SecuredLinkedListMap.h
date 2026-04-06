@@ -205,7 +205,7 @@ void SecuredLinkedListMap<T1, T2>::clearUnsecured() {
 	while(bucketRoot != NULL) {
     tmp = bucketRoot;
 		bucketRoot = bucketRoot->next;
-    delete tmp->value; // specific to this project: delete object on heap
+    //delete tmp->value; // specific to this project: delete object on heap
     delete tmp;
     bucketSize--;
 	}
