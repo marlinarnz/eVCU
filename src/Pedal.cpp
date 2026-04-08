@@ -122,7 +122,10 @@ float Pedal::smoothen(float newPosition)
 double Pedal::mapADC(int adc)
 {
   int size = m_pMap->size();
-  if (size == 0) {return 0.0;}
+  if (size == 0) {
+    PRINT("Error: Pedal translation missing")
+    return 0.0;
+  }
 
   // Convert ADC to voltage
   double voltage = ((double)adc / ADC_RESOLUTION) * m_vref * m_dividerRatio;
