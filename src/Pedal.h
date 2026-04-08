@@ -21,7 +21,7 @@
 class Pedal : public DeviceLoop
 {
 public:
-  Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDouble* pParam, const SecuredLinkedListMap<double, double>& map, double vref, double dividerRatio, ParameterBool* pParamInhibit=nullptr);
+  Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDouble* pParam, SecuredLinkedListMap<double, double>* pMap, double vref, double dividerRatio, ParameterBool* pParamInhibit=nullptr);
   ~Pedal();
   void begin();
   void shutdown();
@@ -35,7 +35,7 @@ private:
   ParameterDouble* m_pParam;
   ParameterBool* m_pParamInhibit;
   uint8_t m_pin;
-  SecuredLinkedListMap<double, double> m_map;
+  SecuredLinkedListMap<double, double>* m_pMap;
   double m_vref;
   double m_dividerRatio;
 };

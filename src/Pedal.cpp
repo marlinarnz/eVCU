@@ -11,16 +11,17 @@
  *  @param readInterval time in ms between two position reads
  *  @param pParam pointer to the ParameterDouble instance that
  *                informs other Devices about pedal position in %
- *  @param map dictionary to translate voltage readings into %
+ *  @param pMap pointer to a SecuredLinkedListMap<double, double>
+ *              to translate voltage readings into %
  *  @param vref ADC reference voltage
  *  @param dividerRatio voltage divider ratio
  *  @param pParamInhibit pointer to the ParameterBool instance
  *                       that overwrites the pedal position with 0
  */
-Pedal::Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDouble* pParam, const SecuredLinkedListMap<double, double>& map, double vref, double dividerRatio, ParameterBool* pParamInhibit)
+Pedal::Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDouble* pParam, SecuredLinkedListMap<double, double>* pMap, double vref, double dividerRatio, ParameterBool* pParamInhibit)
   : DeviceLoop(vc, readInterval),
     m_pParam(pParam), m_pParamInhibit(pParamInhibit), m_pin(pin),
-    m_map(map), m_vref(vref), m_dividerRatio(dividerRatio), m_prevVals{}
+    m_pMap(pMap), m_vref(vref), m_dividerRatio(dividerRatio), m_prevVals{}
 {
   // Set all values in smoothening array to 0
   for (int i=0; i<N_PREV_VALS; i++) {
@@ -114,13 +115,13 @@ float Pedal::smoothen(float newPosition)
 
 /** Maps ADC value to percentage.
  *  Converts ADC reading to voltage and performs linear interpolation
- *  between neighbouring voltage-percentage pairs stored in m_map.
+ *  between neighbouring voltage-percentage pairs stored in m_pMap.
  *  @param adc ADC reading
  *  @return percentage value
  */
 double Pedal::mapADC(int adc)
 {
-  int size = m_map.size();
+  int size = m_pMap->size();
   if (size == 0) {return 0.0;}
 
   // Convert ADC to voltage
@@ -129,7 +130,7 @@ double Pedal::mapADC(int adc)
   // Copy map elements
   SecuredLinkedListMapElement<double, double>* elements =
     new SecuredLinkedListMapElement<double, double>[size];
-  m_map.getAll(elements);
+  m_pMap->getAll(elements);
 
   double prevVoltage = elements[0].key;
   double prevPercent = elements[0].value;
