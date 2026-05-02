@@ -1,8 +1,8 @@
 #include "Pedal.h"
 
 
-#define ADC_WIDTH 9
-#define ADC_RESOLUTION 511
+#define ADC_WIDTH 12
+#define ADC_RESOLUTION 4095
 
 
 /** The constructor configures the analog pin.
@@ -13,15 +13,15 @@
  *                informs other Devices about pedal position in %
  *  @param pMap pointer to a SecuredLinkedListMap<double, double>
  *              to translate voltage readings into %
- *  @param vref ADC reference voltage
- *  @param dividerRatio voltage divider ratio
+ *  @param vref maximum possible voltage before voltage divider
+ *  @param dividerRatio voltage divider ratio (<=1)
  *  @param pParamInhibit pointer to the ParameterBool instance
  *                       that overwrites the pedal position with 0
  */
 Pedal::Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDouble* pParam, SecuredLinkedListMap<double, double>* pMap, double vref, double dividerRatio, ParameterBool* pParamInhibit)
   : DeviceLoop(vc, readInterval),
     m_pParam(pParam), m_pParamInhibit(pParamInhibit), m_pin(pin),
-    m_pMap(pMap), m_vref(vref), m_dividerRatio(dividerRatio), m_prevVals{}
+    m_pMap(pMap), m_vref(0), m_dividerRatio(dividerRatio), m_prevVals{}
 {
   // Set all values in smoothening array to 0
   for (int i=0; i<N_PREV_VALS; i++) {
@@ -32,12 +32,23 @@ Pedal::Pedal(VehicleController* vc, uint8_t pin, int readInterval, ParameterDoub
   // Attach the pin to ADC and clear previous settings
   //adcAttachPin(pin);
   // Set the pin's suggested voltage range (11 ~ full range 0-3.3V)
-  analogSetPinAttenuation(pin, ADC_11db);
+  adc_attenuation_t attenuation;
+  if (vref * dividerRatio < 1.1) {
+    attenuation = ADC_0db;
+    m_vref = 1.1;
+  } else if (vref * dividerRatio < 1.5) {
+    attenuation = ADC_2_5db;
+    m_vref = 1.5;
+  } else if (vref * dividerRatio < 2.2) {
+    attenuation = ADC_6db;
+    m_vref = 2.2;
+  } else {
+    attenuation = ADC_11db;
+    m_vref = 3.3;
+  }
+  analogSetPinAttenuation(pin, attenuation);
   // Set the ADC resolution in bits (9=511 to 12=4095)
   analogReadResolution(ADC_WIDTH);
-
-  // Set pin mode
-  //pinMode(pin, INPUT);
 }
 
 
@@ -57,6 +68,7 @@ void Pedal::begin()
 {
   // Start tasks
   this->startTasks(4096, 8192);
+  PRINT("Info: Pedal Vref set to " + String(m_vref))
 }
 
 
@@ -128,7 +140,7 @@ double Pedal::mapADC(int adc)
   }
 
   // Convert ADC to voltage
-  double voltage = ((double)adc / ADC_RESOLUTION) * m_vref * m_dividerRatio;
+  double voltage = (double(adc) / ADC_RESOLUTION) * m_vref / m_dividerRatio;
 
   // Copy map elements
   SecuredLinkedListMapElement<double, double>* elements =
