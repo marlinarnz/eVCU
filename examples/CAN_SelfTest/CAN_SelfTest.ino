@@ -27,12 +27,13 @@ public:
     msg->extd = 0;
     msg->rtr = 0;
     msg->ss = 0;
-    msg->self = 1; // self reception request
+    msg->self = 0; // self reception request
     msg->dlc_non_comp = 0;
     msg->reserved = 0;
-    msg->data_length_code = 1;
+    msg->data_length_code = 2;
     msg->identifier = 0x1;
     msg->data[0] = 0;
+    msg->data[1] = 0;
   };
   void begin() {
     Serial.println("Started CAN Manager");
@@ -44,7 +45,7 @@ public:
     this->initSerialProtocol(config);
     
     // Define message(s) to send
-    this->setTransactionPeriodic(msg, 1000);
+    this->setTransactionPeriodic(msg, 1000, &(msg->data[1]), 8, 8);
   };
 
   void shutdown() {
@@ -104,7 +105,7 @@ CANManager devTwo(&vc);
 
 void setup() {
   // Preparations
-  Serial.begin(9600); // Start the Serial monitor
+  Serial.begin(115200); // Start the Serial monitor
   
   Serial.println("===== Starting up the devices =====\n");
   
